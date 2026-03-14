@@ -1,0 +1,44 @@
+[
+  {
+    "time": "14_10_06",
+    "type": "multiple_people",
+    "detail": "",
+    "evidence": "outputs\\evidence\\multiple_people_14_10_06.jpg"
+  },
+  {
+    "time": "14_10_27",
+    "type": "multiple_people",
+    "detail": "",
+    "evidence": "outputs\\evidence\\multiple_people_14_10_27.jpg"
+  },
+  {
+    "time": "14_10_33",
+    "type": "face_not_visible",
+    "detail": "",
+    "evidence": "outputs\\evidence\\face_not_visible_14_10_33.jpg"
+  },
+  {
+    "time": "14_10_38",
+    "type": "face_not_visible",
+    "detail": "",
+    "evidence": "outputs\\evidence\\face_not_visible_14_10_38.jpg"
+  },
+  {
+    "time": "14_10_44",
+    "type": "multiple_people",
+    "detail": "",
+    "evidence": "outputs\\evidence\\multiple_people_14_10_44.jpg"
+  },
+  {
+    "time": "14_10_52",
+    "type": "multiple_people",
+    "detail": "",
+    "evidence": "outputs\\evidence\\multiple_people_14_10_52.jpg"
+  },
+  {
+    "time": "14_10_59",
+    "type": "multiple_people",
+    "detail": "",
+    "evidence": "outputs\\evidence\\multiple_people_14_10_59.jpg"
+  }
+]

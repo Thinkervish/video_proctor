@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin — Code Analysis Dashboard</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f4f6f9;--white:#fff;--border:#e2e6ea;--border2:#d0d7de;
+  --text:#1a2332;--text2:#4a5568;--text3:#8a9ab0;
+  --blue:#2563eb;--blue-lt:#dbeafe;
+  --green:#059669;--green-lt:#d1fae5;
+  --red:#dc2626;--red-lt:#fee2e2;
+  --amber:#d97706;--amber-lt:#fef3c7;
+  --mono:'JetBrains Mono',monospace;
+  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.08);
+}
+html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text)}
+
+/* Layout */
+.layout{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* Header */
+.hdr{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:var(--shadow)}
+.hdr-logo{font-size:.9rem;font-weight:800;letter-spacing:2px;color:var(--blue)}
+.hdr-right{display:flex;align-items:center;gap:12px}
+.hdr-stat{text-align:right}
+.hdr-stat-v{font-size:.85rem;font-weight:800;font-family:var(--mono);color:var(--text)}
+.hdr-stat-l{font-size:.55rem;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.refresh-btn{padding:6px 14px;background:var(--white);border:1px solid var(--border2);border-radius:7px;font-size:.72rem;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s}
+.refresh-btn:hover{background:var(--bg);border-color:var(--blue);color:var(--blue)}
+.live-b{display:flex;align-items:center;gap:4px;padding:3px 10px;background:var(--green-lt);border:1px solid var(--green);border-radius:20px;font-size:.62rem;font-weight:700;color:var(--green)}
+.dot{width:5px;height:5px;background:var(--green);border-radius:50%;animation:bl 1s step-end infinite}
+@keyframes bl{50%{opacity:0}}
+
+/* Main content */
+.main{flex:1;overflow:hidden;display:flex;gap:0}
+
+/* Left — submissions list */
+.sidebar{width:300px;flex-shrink:0;border-right:1px solid var(--border);background:var(--white);display:flex;flex-direction:column;overflow:hidden}
+.sb-hdr{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.sb-title{font-size:.72rem;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:1px}
+.sb-count{background:var(--blue);color:#fff;border-radius:10px;padding:2px 8px;font-size:.62rem;font-weight:800;font-family:var(--mono)}
+.sb-list{flex:1;overflow-y:auto}
+.sb-list::-webkit-scrollbar{width:3px}
+.sb-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.sb-empty{padding:40px 16px;text-align:center;color:var(--text3);font-size:.75rem}
+.sb-empty-i{font-size:1.8rem;opacity:.3;margin-bottom:8px}
+
+/* Submission card in sidebar */
+.sub-card{
+  padding:12px 16px;border-bottom:1px solid var(--border);
+  cursor:pointer;transition:background .1s;border-left:3px solid transparent;
+}
+.sub-card:hover{background:var(--bg)}
+.sub-card.active{background:var(--blue-lt);border-left-color:var(--blue)}
+.sub-card.flagged{border-left-color:var(--red)}
+.sub-card.flagged.active{background:var(--red-lt)}
+.sc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.sc-sid{font-size:.75rem;font-weight:700;color:var(--text);font-family:var(--mono)}
+.sc-time{font-size:.62rem;color:var(--text3);font-family:var(--mono)}
+.sc-flags{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.sc-flag{font-size:.58rem;padding:1px 6px;border-radius:4px;font-weight:700}
+.sc-flag.critical{background:var(--red-lt);color:var(--red)}
+.sc-flag.warn{background:var(--amber-lt);color:var(--amber)}
+.sc-flag.ok{background:var(--green-lt);color:var(--green)}
+.sc-score{font-size:.68rem;font-family:var(--mono);font-weight:700}
+
+/* Right — detail panel */
+.detail{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+.detail::-webkit-scrollbar{width:4px}
+.detail::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.detail-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3)}
+.detail-empty-i{font-size:3rem;opacity:.2;margin-bottom:12px}
+
+/* Detail cards */
+.d-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
+.d-card-hdr{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:12px}
+
+/* Integrity score */
+.integrity-row{display:flex;align-items:center;gap:16px}
+.ring-wrap{position:relative;width:90px;height:90px;flex-shrink:0}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-pct{font-size:1.2rem;font-weight:800;font-family:var(--mono)}
+.ring-lbl{font-size:.5rem;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+.integrity-info{flex:1}
+.integrity-name{font-size:1rem;font-weight:800;color:var(--text);font-family:var(--mono)}
+.integrity-time{font-size:.68rem;color:var(--text3);margin-top:2px}
+.integrity-flags{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.if-item{font-size:.7rem;display:flex;align-items:flex-start;gap:6px}
+.if-item.red{color:var(--red)}.if-item.ok{color:var(--green)}
+
+/* Metrics grid */
+.metrics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.metric{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px}
+.metric-v{font-size:1.3rem;font-weight:800;font-family:var(--mono);color:var(--text)}
+.metric-v.red{color:var(--red)}.metric-v.amber{color:var(--amber)}.metric-v.green{color:var(--green)}.metric-v.blue{color:var(--blue)}
+.metric-l{font-size:.6rem;color:var(--text3);font-weight:500;margin-top:3px}
+.metric-sub{font-size:.62rem;color:var(--text3);margin-top:1px;font-style:italic}
+
+/* AI signals bars */
+.signal-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+.signal-row:last-child{border-bottom:none}
+.signal-name{font-size:.68rem;color:var(--text2);width:200px;flex-shrink:0}
+.signal-bar-wrap{flex:1;height:7px;background:var(--border);border-radius:4px;overflow:hidden}
+.signal-bar{height:100%;border-radius:4px;transition:width 1s ease}
+.signal-pct{font-size:.65rem;font-family:var(--mono);color:var(--text3);width:36px;text-align:right;flex-shrink:0}
+
+/* Verdict box */
+.verdict-box{border-radius:8px;padding:12px 16px;border:1px solid}
+.verdict-box.clean{background:var(--green-lt);border-color:var(--green)}
+.verdict-box.suspect{background:var(--red-lt);border-color:var(--red)}
+.verdict-box.warn{background:var(--amber-lt);border-color:var(--amber)}
+.verdict-title{font-size:.82rem;font-weight:800}
+.verdict-box.clean .verdict-title{color:var(--green)}
+.verdict-box.suspect .verdict-title{color:var(--red)}
+.verdict-box.warn .verdict-title{color:var(--amber)}
+.verdict-sub{font-size:.7rem;color:var(--text2);margin-top:4px;line-height:1.5}
+
+/* Code preview */
+.code-preview{background:#1e1e2e;border-radius:8px;padding:14px;overflow-x:auto;max-height:200px;overflow-y:auto}
+.code-preview pre{font-family:var(--mono);font-size:.72rem;color:#cdd6f4;line-height:1.6;white-space:pre-wrap;word-break:break-all}
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div class="hdr-logo">PROCTOR AI — ADMIN</div>
+    <div class="hdr-right">
+      <div class="hdr-stat"><div class="hdr-stat-v" id="hTotal">0</div><div class="hdr-stat-l">Submissions</div></div>
+      <div class="hdr-stat"><div class="hdr-stat-v" id="hFlagged" style="color:var(--red)">0</div><div class="hdr-stat-l">Flagged</div></div>
+      <div class="hdr-stat"><div class="hdr-stat-v" id="hClean" style="color:var(--green)">0</div><div class="hdr-stat-l">Clean</div></div>
+      <button class="refresh-btn" onclick="loadSubmissions()">↻ Refresh</button>
+      <div class="live-b"><div class="dot"></div>LIVE</div>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- Left sidebar — submission list -->
+    <div class="sidebar">
+      <div class="sb-hdr">
+        <span class="sb-title">Submissions</span>
+        <span class="sb-count" id="sbCount">0</span>
+      </div>
+      <div class="sb-list" id="sbList">
+        <div class="sb-empty">
+          <div class="sb-empty-i">📭</div>
+          No submissions yet.<br>Waiting for candidates...
+        </div>
+      </div>
+    </div>
+
+    <!-- Right detail panel -->
+    <div class="detail" id="detail">
+      <div class="detail-empty">
+        <div class="detail-empty-i">👈</div>
+        Select a submission to view analysis
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const SIGNAL_LABELS = {
+  perplexity_proxy:     'Token Predictability (Perplexity)',
+  burstiness:           'Writing Uniformity (Burstiness)',
+  comment_density:      'Comment Density',
+  naming_consistency:   'Naming Consistency (snake_case)',
+  line_length_variance: 'Line Length Uniformity',
+  structural_symmetry:  'Structural Symmetry',
+};
+
+let submissions  = [];   // all results from server
+let selectedIdx  = null;
+
+// ── Load submissions from server ──────────────────────────────────────────
+async function loadSubmissions() {
+  try {
+    const r = await fetch('/submissions');
+    const d = await r.json();
+    submissions = d.submissions || [];
+    renderSidebar();
+    if (selectedIdx !== null && submissions[selectedIdx]) {
+      renderDetail(submissions[selectedIdx]);
+    }
+  } catch(e) {}
+}
+
+// Auto-refresh every 5 seconds
+loadSubmissions();
+setInterval(loadSubmissions, 5000);
+
+// ── Sidebar ───────────────────────────────────────────────────────────────
+function renderSidebar() {
+  const flagged = submissions.filter(s => !s.clean).length;
+  const clean   = submissions.filter(s => s.clean).length;
+
+  document.getElementById('hTotal').textContent   = submissions.length;
+  document.getElementById('hFlagged').textContent = flagged;
+  document.getElementById('hClean').textContent   = clean;
+  document.getElementById('sbCount').textContent  = submissions.length;
+
+  const list = document.getElementById('sbList');
+  if (!submissions.length) {
+    list.innerHTML = '<div class="sb-empty"><div class="sb-empty-i">📭</div>No submissions yet.<br>Waiting for candidates...</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  submissions.slice().reverse().forEach((s, i) => {
+    const realIdx = submissions.length - 1 - i;
+    const flagged = !s.clean;
+    const score   = s.integrity_score || 0;
+    const scoreColor = score >= 70 ? 'var(--green)' : score >= 45 ? 'var(--amber)' : 'var(--red)';
+
+    const flagsHtml = s.flags && s.flags.length
+      ? s.flags.map(f => {
+          const cls = f.toLowerCase().includes('plagiarism') || f.toLowerCase().includes('ai') ? 'critical' : 'warn';
+          const short = f.includes('Plagiarism') ? '⚠ Plagiarism' :
+                        f.includes('AI') ? '🤖 AI Code' :
+                        f.includes('complexity') ? '🔴 Complex' : '⚠ Flag';
+          return `<span class="sc-flag ${cls}">${short}</span>`;
+        }).join('')
+      : '<span class="sc-flag ok">✅ Clean</span>';
+
+    const card = document.createElement('div');
+    card.className = `sub-card ${flagged ? 'flagged' : ''} ${selectedIdx === realIdx ? 'active' : ''}`;
+    card.onclick   = () => { selectedIdx = realIdx; renderDetail(s); highlightCard(realIdx); };
+    card.innerHTML = `
+      <div class="sc-top">
+        <span class="sc-sid">${s.student_id || 'unknown'}</span>
+        <span class="sc-time">${s.submitted_at || '--'}</span>
+      </div>
+      <div class="sc-flags">${flagsHtml}</div>
+      <div class="sc-score" style="color:${scoreColor};margin-top:4px">Integrity: ${score}/100</div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function highlightCard(idx) {
+  document.querySelectorAll('.sub-card').forEach((c, i) => {
+    const realIdx = submissions.length - 1 - i;
+    c.classList.toggle('active', realIdx === idx);
+  });
+}
+
+// ── Detail panel ──────────────────────────────────────────────────────────
+function renderDetail(s) {
+  const score    = s.integrity_score || 0;
+  const plag     = s.plagiarism     || {};
+  const ai       = s.ai_detection   || {};
+  const perf     = s.performance    || {};
+  const flags    = s.flags          || [];
+  const signals  = ai.signals       || {};
+
+  const scoreColor  = score >= 70 ? 'var(--green)' : score >= 45 ? 'var(--amber)' : 'var(--red)';
+  const circumf     = 2 * Math.PI * 36;
+  const dash        = circumf - (score / 100) * circumf;
+
+  const flagsHtml = flags.length
+    ? flags.map(f => `<div class="if-item red">⚠ ${f}</div>`).join('')
+    : '<div class="if-item ok">✅ No issues detected — code appears clean</div>';
+
+  // Verdict
+  let verdictClass = 'clean', verdictTitle = '✅ Clean Submission', verdictSub = 'No plagiarism or AI generation detected. Code quality is acceptable.';
+  if (flags.some(f => f.toLowerCase().includes('plagiarism'))) {
+    verdictClass = 'suspect'; verdictTitle = '🚨 Plagiarism Detected';
+    verdictSub = `Code similarity of ${(plag.score*100).toFixed(1)}% detected${plag.matched_student ? ' — matches submission by ' + plag.matched_student : ''}. Immediate review required.`;
+  } else if (flags.some(f => f.toLowerCase().includes('ai'))) {
+    verdictClass = 'suspect'; verdictTitle = '🤖 AI-Generated Code Suspected';
+    verdictSub = `AI probability: ${(ai.probability*100).toFixed(1)}%. ${ai.verdict || ''}. Review the signal breakdown below.`;
+  } else if (flags.length) {
+    verdictClass = 'warn'; verdictTitle = '⚠ Code Quality Issues';
+    verdictSub = 'No integrity violations but code quality concerns detected.';
+  }
+
+  const plagColor = plag.score >= 0.80 ? 'red' : plag.score >= 0.50 ? 'amber' : 'green';
+  const aiColor   = ai.probability >= 0.65 ? 'red' : ai.probability >= 0.45 ? 'amber' : 'green';
+  const miColor   = perf.mi_rank === 'A' ? 'green' : perf.mi_rank === 'B' ? 'blue' : perf.mi_rank === 'C' ? 'amber' : 'red';
+  const ccColor   = ['A','B'].includes(perf.complexity_rank) ? 'green' : perf.complexity_rank === 'C' ? 'amber' : 'red';
+
+  const signalRows = Object.entries(signals).map(([k, v]) => {
+    const pct   = Math.round(v * 100);
+    const color = pct >= 65 ? '#dc2626' : pct >= 45 ? '#d97706' : '#059669';
+    return `
+      <div class="signal-row">
+        <span class="signal-name">${SIGNAL_LABELS[k] || k}</span>
+        <div class="signal-bar-wrap"><div class="signal-bar" style="width:${pct}%;background:${color}"></div></div>
+        <span class="signal-pct">${pct}%</span>
+      </div>`;
+  }).join('');
+
+  const codePreview = s.code
+    ? `<div class="d-card">
+        <div class="d-card-hdr">Submitted Code</div>
+        <div class="code-preview"><pre>${escHtml(s.code.slice(0, 800))}${s.code.length > 800 ? '\n... (truncated)' : ''}</pre></div>
+       </div>`
+    : '';
+
+  document.getElementById('detail').innerHTML = `
+
+    <!-- Verdict -->
+    <div class="verdict-box ${verdictClass}">
+      <div class="verdict-title">${verdictTitle}</div>
+      <div class="verdict-sub">${verdictSub}</div>
+    </div>
+
+    <!-- Integrity ring + flags -->
+    <div class="d-card">
+      <div class="d-card-hdr">Integrity Report</div>
+      <div class="integrity-row">
+        <div class="ring-wrap">
+          <svg width="90" height="90" viewBox="0 0 90 90">
+            <circle cx="45" cy="45" r="36" fill="none" stroke="var(--border)" stroke-width="9"/>
+            <circle cx="45" cy="45" r="36" fill="none" stroke="${scoreColor}" stroke-width="9"
+              stroke-dasharray="${circumf}" stroke-dashoffset="${dash}"
+              stroke-linecap="round" style="transition:stroke-dashoffset 1s ease"/>
+          </svg>
+          <div class="ring-txt">
+            <div class="ring-pct" style="color:${scoreColor}">${score}</div>
+            <div class="ring-lbl">/ 100</div>
+          </div>
+        </div>
+        <div class="integrity-info">
+          <div class="integrity-name">${s.student_id || 'Unknown'}</div>
+          <div class="integrity-time">Submitted: ${s.submitted_at || '--'}</div>
+          <div class="integrity-flags">${flagsHtml}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="d-card">
+      <div class="d-card-hdr">Analysis Metrics</div>
+      <div class="metrics-grid">
+        <div class="metric">
+          <div class="metric-v ${plagColor}">${(plag.score*100).toFixed(1)}%</div>
+          <div class="metric-l">Plagiarism Score</div>
+          <div class="metric-sub">${plag.flagged ? '⚠ Flagged' : '✅ Clear'}${plag.matched_student ? ' — ' + plag.matched_student : ''}</div>
+        </div>
+        <div class="metric">
+          <div class="metric-v ${aiColor}">${(ai.probability*100).toFixed(1)}%</div>
+          <div class="metric-l">AI Probability</div>
+          <div class="metric-sub">${ai.verdict || 'N/A'}</div>
+        </div>
+        <div class="metric">
+          <div class="metric-v ${miColor}">${perf.maintainability || 0}</div>
+          <div class="metric-l">Maintainability</div>
+          <div class="metric-sub">Grade: ${perf.mi_rank || 'N/A'}</div>
+        </div>
+        <div class="metric">
+          <div class="metric-v ${ccColor}">${perf.complexity || 0}</div>
+          <div class="metric-l">Avg Complexity</div>
+          <div class="metric-sub">Grade: ${perf.complexity_rank || 'N/A'}</div>
+        </div>
+        <div class="metric">
+          <div class="metric-v blue">${perf.loc || 0}</div>
+          <div class="metric-l">Lines of Code</div>
+          <div class="metric-sub">LLOC: ${perf.lloc || 0}</div>
+        </div>
+        <div class="metric">
+          <div class="metric-v">${perf.quality_score || 0}</div>
+          <div class="metric-l">Quality Score</div>
+          <div class="metric-sub">/ 100</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI signal breakdown -->
+    ${signalRows ? `<div class="d-card">
+      <div class="d-card-hdr">AI Detection — Signal Breakdown</div>
+      ${signalRows}
+    </div>` : ''}
+
+    <!-- Code preview -->
+    ${codePreview}
+  `;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

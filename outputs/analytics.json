@@ -1,0 +1,256 @@
+{
+  "duration": 61,
+  "avg_attention": 83,
+  "violations": [
+    {
+      "time": "13_41_48",
+      "type": "face_not_visible",
+      "detail": "",
+      "evidence": "outputs\\evidence\\face_not_visible_13_41_48.jpg"
+    },
+    {
+      "time": "13_41_49",
+      "type": "tab_switched",
+      "detail": "",
+      "evidence": "outputs\\evidence\\tab_switched_13_41_49.jpg"
+    },
+    {
+      "time": "13_41_50",
+      "type": "multiple_people",
+      "detail": "",
+      "evidence": "outputs\\evidence\\multiple_people_13_41_50.jpg"
+    },
+    {
+      "time": "13_41_51",
+      "type": "low_attention",
+      "detail": "",
+      "evidence": "outputs\\evidence\\low_attention_13_41_51.jpg"
+    },
+    {
+      "time": "13_41_52",
+      "type": "talking",
+      "detail": "",
+      "evidence": "outputs\\evidence\\talking_13_41_52.jpg"
+    },
+    {
+      "time": "13_41_57",
+      "type": "multiple_people",
+      "detail": "",
+      "evidence": "outputs\\evidence\\multiple_people_13_41_57.jpg"
+    },
+    {
+      "time": "13_42_02",
+      "type": "face_not_visible",
+      "detail": "",
+      "evidence": "outputs\\evidence\\face_not_visible_13_42_02.jpg"
+    },
+    {
+      "time": "13_42_02",
+      "type": "low_attention",
+      "detail": "",
+      "evidence": "outputs\\evidence\\low_attention_13_42_02.jpg"
+    },
+    {
+      "time": "13_42_02",
+      "type": "talking",
+      "detail": "",
+      "evidence": "outputs\\evidence\\talking_13_42_02.jpg"
+    },
+    {
+      "time": "13_42_07",
+      "type": "multiple_people",
+      "detail": "",
+      "evidence": "outputs\\evidence\\multiple_people_13_42_07.jpg"
+    },
+    {
+      "time": "13_42_07",
+      "type": "face_not_visible",
+      "detail": "",
+      "evidence": "outputs\\evidence\\face_not_visible_13_42_07.jpg"
+    },
+    {
+      "time": "13_42_10",
+      "type": "low_attention",
+      "detail": "",
+      "evidence": "outputs\\evidence\\low_attention_13_42_10.jpg"
+    },
+    {
+      "time": "13_42_18",
+      "type": "mouth_open",
+      "detail": "",
+      "evidence": "outputs\\evidence\\mouth_open_13_42_18.jpg"
+    },
+    {
+      "time": "13_42_19",
+      "type": "talking",
+      "detail": "",
+      "evidence": "outputs\\evidence\\talking_13_42_19.jpg"
+    },
+    {
+      "time": "13_42_27",
+      "type": "talking",
+      "detail": "",
+      "evidence": "outputs\\evidence\\talking_13_42_27.jpg"
+    },
+    {
+      "time": "13_42_39",
+      "type": "tab_switched",
+      "detail": "",
+      "evidence": "outputs\\evidence\\tab_switched_13_42_39.jpg"
+    },
+    {
+      "time": "13_42_42",
+      "type": "talking",
+      "detail": "",
+      "evidence": "outputs\\evidence\\talking_13_42_42.jpg"
+    },
+    {
+      "time": "13_42_46",
+      "type": "tab_switched",
+      "detail": "",
+      "evidence": "outputs\\evidence\\tab_switched_13_42_46.jpg"
+    }
+  ],
+  "suspicion_score": 100,
+  "risk": "HIGH RISK",
+  "timeline": [
+    {
+      "event": "face_not_visible",
+      "score": 20,
+      "time": "13:41:48",
+      "repeat": 1,
+      "penalty": 20,
+      "multiplier": 1.0
+    },
+    {
+      "event": "tab_switched",
+      "score": 70,
+      "time": "13:41:49",
+      "repeat": 1,
+      "penalty": 50,
+      "multiplier": 1.0,
+      "note": "WARNING: Next tab switch will terminate the test."
+    },
+    {
+      "event": "multiple_people",
+      "score": 100,
+      "time": "13:41:50",
+      "repeat": 1,
+      "penalty": 30,
+      "multiplier": 1.0
+    },
+    {
+      "event": "low_attention",
+      "score": 100,
+      "time": "13:41:51",
+      "repeat": 1,
+      "penalty": 15,
+      "multiplier": 1.0
+    },
+    {
+      "event": "talking",
+      "score": 100,
+      "time": "13:41:52",
+      "repeat": 1,
+      "penalty": 25,
+      "multiplier": 1.0
+    },
+    {
+      "event": "BURST_PATTERN",
+      "score": 100,
+      "time": "13:41:52",
+      "repeat": 1,
+      "penalty": 20,
+      "multiplier": 1.0
+    },
+    {
+      "event": "multiple_people",
+      "score": 100,
+      "time": "13:41:57",
+      "repeat": 2,
+      "penalty": 45,
+      "multiplier": 1.5
+    },
+    {
+      "event": "face_not_visible",
+      "score": 100,
+      "time": "13:42:02",
+      "repeat": 2,
+      "penalty": 30,
+      "multiplier": 1.5
+    },
+    {
+      "event": "low_attention",
+      "score": 100,
+      "time": "13:42:02",
+      "repeat": 2,
+      "penalty": 22,
+      "multiplier": 1.5
+    },
+    {
+      "event": "talking",
+      "score": 100,
+      "time": "13:42:02",
+      "repeat": 2,
+      "penalty": 37,
+      "multiplier": 1.5
+    },
+    {
+      "event": "multiple_people",
+      "score": 100,
+      "time": "13:42:07",
+      "repeat": 3,
+      "penalty": 60,
+      "multiplier": 2.0
+    },
+    {
+      "event": "face_not_visible",
+      "score": 100,
+      "time": "13:42:07",
+      "repeat": 3,
+      "penalty": 40,
+      "multiplier": 2.0
+    },
+    {
+      "event": "low_attention",
+      "score": 100,
+      "time": "13:42:10",
+      "repeat": 3,
+      "penalty": 30,
+      "multiplier": 2.0
+    },
+    {
+      "event": "mouth_open",
+      "score": 100,
+      "time": "13:42:18",
+      "repeat": 1,
+      "penalty": 20,
+      "multiplier": 1.0
+    },
+    {
+      "event": "talking",
+      "score": 100,
+      "time": "13:42:19",
+      "repeat": 3,
+      "penalty": 50,
+      "multiplier": 2.0
+    },
+    {
+      "event": "talking",
+      "score": 100,
+      "time": "13:42:27",
+      "repeat": 4,
+      "penalty": 62,
+      "multiplier": 2.5
+    },
+    {
+      "event": "tab_switched",
+      "score": 100,
+      "time": "13:42:39",
+      "repeat": 2,
+      "penalty": 100,
+      "multiplier": 2.0,
+      "note": "TEST TERMINATED: 2nd tab switch."
+    }
+  ]
+}

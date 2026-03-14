@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ProctorAI Dashboard</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f4f6f9;--white:#ffffff;--border:#e2e6ea;--border2:#d0d7de;
+  --text:#1a2332;--text2:#4a5568;--text3:#8a9ab0;
+  --blue:#2563eb;--blue-lt:#dbeafe;
+  --green:#059669;--green-lt:#d1fae5;
+  --red:#dc2626;--red-lt:#fee2e2;
+  --amber:#d97706;--amber-lt:#fef3c7;
+  --mono:'JetBrains Mono',monospace;
+  --radius:10px;
+  --shadow:0 1px 3px rgba(0,0,0,.08);
+}
+html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text)}
+.layout{display:flex;height:100vh;overflow:hidden}
+.nav{width:216px;flex-shrink:0;background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+.nav::-webkit-scrollbar{width:3px}
+.nav::-webkit-scrollbar-thumb{background:var(--border2)}
+.nav-logo{padding:16px 18px 14px;font-size:1rem;font-weight:800;letter-spacing:3px;color:var(--blue);border-bottom:1px solid var(--border)}
+.ns{padding:14px 10px 4px}
+.ns-t{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);padding:0 8px;margin-bottom:5px}
+.ni{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:6px;font-size:.73rem;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s}
+.ni:hover{background:var(--bg);color:var(--text)}
+.ni.on{background:var(--blue-lt);color:var(--blue);font-weight:600}
+.nd{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.5}
+.nav-cam{margin-top:auto;padding:10px;border-top:1px solid var(--border)}
+.nav-cam-box{border-radius:7px;overflow:hidden;border:1px solid var(--border);background:#000;aspect-ratio:4/3}
+.nav-cam-box img{width:100%;height:100%;object-fit:cover;display:block}
+.nav-cam-row{display:flex;align-items:center;justify-content:space-between;margin-top:5px}
+.nav-cam-lbl{font-size:.6rem;color:var(--text3);font-weight:500}
+.live-b{display:flex;align-items:center;gap:4px;padding:3px 8px;background:var(--red-lt);border:1px solid var(--red);border-radius:20px;font-size:.6rem;font-weight:700;color:var(--red)}
+.dot{width:5px;height:5px;background:var(--red);border-radius:50%;animation:bl 1s step-end infinite}
+@keyframes bl{50%{opacity:0}}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.hdr{background:var(--white);border-bottom:1px solid var(--border);padding:0 22px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.htabs{display:flex;gap:3px}
+.ht{padding:6px 14px;border-radius:6px;font-size:.75rem;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:all .15s;display:flex;align-items:center;gap:5px}
+.ht.on{background:var(--blue);color:#fff;font-weight:600}
+.ht:hover:not(.on){background:var(--bg);color:var(--text)}
+.hdr-r{display:flex;align-items:center;gap:8px}
+.pdf-b{display:flex;align-items:center;gap:5px;padding:6px 12px;background:var(--white);border:1px solid var(--border2);border-radius:7px;font-size:.72rem;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s}
+.pdf-b:hover{background:var(--bg);border-color:var(--blue);color:var(--blue)}
+.content{flex:1;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:14px}
+.content::-webkit-scrollbar{width:4px}
+.content::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── CODE ANALYSIS TAB ── */
+.ca-wrap{display:flex;flex-direction:column;gap:14px;flex:1}
+.ca-top{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ca-editor-box{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}
+.ca-editor-hdr{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ca-editor-title{font-size:.72rem;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:1px}
+.ca-sid{padding:5px 10px;border:1px solid var(--border2);border-radius:6px;font-size:.72rem;color:var(--text2);background:var(--bg);width:160px;font-family:var(--mono)}
+.ca-textarea{width:100%;min-height:220px;padding:14px;font-family:var(--mono);font-size:.75rem;border:none;outline:none;resize:vertical;color:var(--text);background:var(--bg);line-height:1.6}
+.ca-actions{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center}
+.ca-analyze-btn{padding:8px 20px;background:var(--blue);color:#fff;border:none;border-radius:7px;font-size:.75rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s}
+.ca-analyze-btn:hover{background:#1d4ed8}
+.ca-analyze-btn:disabled{background:var(--border2);cursor:not-allowed}
+.ca-store-btn{padding:8px 14px;background:var(--white);border:1px solid var(--border2);border-radius:7px;font-size:.73rem;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s}
+.ca-store-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-lt)}
+.ca-loading{font-size:.72rem;color:var(--text3);display:none;align-items:center;gap:6px}
+.ca-spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Results panel */
+.ca-results{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:10px}
+.ca-results-empty{text-align:center;color:var(--text3);padding:40px;font-size:.78rem}
+.ca-results-empty-i{font-size:1.8rem;opacity:.35;margin-bottom:8px}
+
+/* Integrity score ring */
+.ca-score-row{display:flex;align-items:center;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.ca-ring-wrap{position:relative;width:80px;height:80px;flex-shrink:0}
+.ca-ring-wrap svg{transform:rotate(-90deg)}
+.ca-ring-txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ca-ring-pct{font-size:1.1rem;font-weight:800;font-family:var(--mono)}
+.ca-ring-lbl{font-size:.5rem;color:var(--text3);font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.ca-score-title{font-size:.85rem;font-weight:700;color:var(--text)}
+.ca-score-sub{font-size:.68rem;color:var(--text3);margin-top:3px}
+.ca-flags{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.ca-flag{display:flex;align-items:center;gap:6px;font-size:.68rem;color:var(--red);font-weight:500}
+
+/* Metric rows */
+.ca-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ca-metric{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.ca-metric-v{font-size:1.2rem;font-weight:800;font-family:var(--mono);color:var(--text)}
+.ca-metric-v.red{color:var(--red)}.ca-metric-v.amber{color:var(--amber)}.ca-metric-v.green{color:var(--green)}.ca-metric-v.blue{color:var(--blue)}
+.ca-metric-l{font-size:.6rem;color:var(--text3);font-weight:500;margin-top:3px}
+
+/* Signals breakdown */
+.ca-signals{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.ca-signals-hdr{padding:8px 12px;background:var(--bg);font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);border-bottom:1px solid var(--border)}
+.ca-signal-row{display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--border)}
+.ca-signal-row:last-child{border-bottom:none}
+.ca-signal-name{font-size:.68rem;color:var(--text2);width:160px;flex-shrink:0}
+.ca-signal-bar-wrap{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.ca-signal-bar{height:100%;border-radius:3px;transition:width .8s ease}
+.ca-signal-pct{font-size:.65rem;font-family:var(--mono);color:var(--text3);width:36px;text-align:right;flex-shrink:0}
+
+
+/* ── PROCTOR PANEL ── */
+.pp-wrap{display:flex;flex-direction:column;gap:14px;flex:1}
+.pp-grid{display:grid;grid-template-columns:1fr 340px;gap:14px;flex:1;min-height:0}
+
+/* Stats bar */
+.pp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.pp-stat{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;box-shadow:var(--shadow)}
+.pp-stat-v{font-family:var(--mono);font-size:1.4rem;font-weight:800;color:var(--text)}
+.pp-stat-v.red{color:var(--red)}.pp-stat-v.amber{color:var(--amber)}.pp-stat-v.green{color:var(--green)}.pp-stat-v.blue{color:var(--blue)}
+.pp-stat-l{font-size:.62rem;color:var(--text3);font-weight:500;margin-top:3px}
+
+/* Alert feed */
+.pp-feed{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden;flex:1}
+.pp-feed-hdr{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.pp-feed-title{font-size:.72rem;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:1px}
+.pp-feed-badge{background:var(--red);color:#fff;border-radius:10px;padding:2px 8px;font-size:.62rem;font-weight:800;font-family:var(--mono)}
+.pp-feed-body{flex:1;overflow-y:auto;padding:10px}
+.pp-feed-body::-webkit-scrollbar{width:3px}
+.pp-feed-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── CODE ANALYSIS TAB ── */
+.ca-wrap{display:flex;flex-direction:column;gap:14px;flex:1}
+.ca-top{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ca-editor-box{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}
+.ca-editor-hdr{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ca-editor-title{font-size:.72rem;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:1px}
+.ca-sid{padding:5px 10px;border:1px solid var(--border2);border-radius:6px;font-size:.72rem;color:var(--text2);background:var(--bg);width:160px;font-family:var(--mono)}
+.ca-textarea{width:100%;min-height:220px;padding:14px;font-family:var(--mono);font-size:.75rem;border:none;outline:none;resize:vertical;color:var(--text);background:var(--bg);line-height:1.6}
+.ca-actions{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center}
+.ca-analyze-btn{padding:8px 20px;background:var(--blue);color:#fff;border:none;border-radius:7px;font-size:.75rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s}
+.ca-analyze-btn:hover{background:#1d4ed8}
+.ca-analyze-btn:disabled{background:var(--border2);cursor:not-allowed}
+.ca-store-btn{padding:8px 14px;background:var(--white);border:1px solid var(--border2);border-radius:7px;font-size:.73rem;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s}
+.ca-store-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-lt)}
+.ca-loading{font-size:.72rem;color:var(--text3);display:none;align-items:center;gap:6px}
+.ca-spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Results panel */
+.ca-results{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:10px}
+.ca-results-empty{text-align:center;color:var(--text3);padding:40px;font-size:.78rem}
+.ca-results-empty-i{font-size:1.8rem;opacity:.35;margin-bottom:8px}
+
+/* Integrity score ring */
+.ca-score-row{display:flex;align-items:center;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.ca-ring-wrap{position:relative;width:80px;height:80px;flex-shrink:0}
+.ca-ring-wrap svg{transform:rotate(-90deg)}
+.ca-ring-txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ca-ring-pct{font-size:1.1rem;font-weight:800;font-family:var(--mono)}
+.ca-ring-lbl{font-size:.5rem;color:var(--text3);font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.ca-score-title{font-size:.85rem;font-weight:700;color:var(--text)}
+.ca-score-sub{font-size:.68rem;color:var(--text3);margin-top:3px}
+.ca-flags{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.ca-flag{display:flex;align-items:center;gap:6px;font-size:.68rem;color:var(--red);font-weight:500}
+
+/* Metric rows */
+.ca-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ca-metric{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.ca-metric-v{font-size:1.2rem;font-weight:800;font-family:var(--mono);color:var(--text)}
+.ca-metric-v.red{color:var(--red)}.ca-metric-v.amber{color:var(--amber)}.ca-metric-v.green{color:var(--green)}.ca-metric-v.blue{color:var(--blue)}
+.ca-metric-l{font-size:.6rem;color:var(--text3);font-weight:500;margin-top:3px}
+
+/* Signals breakdown */
+.ca-signals{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.ca-signals-hdr{padding:8px 12px;background:var(--bg);font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);border-bottom:1px solid var(--border)}
+.ca-signal-row{display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--border)}
+.ca-signal-row:last-child{border-bottom:none}
+.ca-signal-name{font-size:.68rem;color:var(--text2);width:160px;flex-shrink:0}
+.ca-signal-bar-wrap{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.ca-signal-bar{height:100%;border-radius:3px;transition:width .8s ease}
+.ca-signal-pct{font-size:.65rem;font-family:var(--mono);color:var(--text3);width:36px;text-align:right;flex-shrink:0}
+
+
+/* Alert message card */
+.alert-msg{
+  display:flex;gap:10px;padding:10px 12px;border-radius:8px;
+  border:1px solid var(--border);margin-bottom:6px;
+  border-left:3px solid var(--border);
+  animation:slideIn .3s ease;background:var(--bg);
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.alert-msg.critical{border-left-color:var(--red);background:#fff8f8}
+.alert-msg.high    {border-left-color:#f97316;background:#fff8f0}
+.alert-msg.medium  {border-left-color:var(--amber);background:#fffdf5}
+.alert-msg.low     {border-left-color:var(--blue);background:#f8faff}
+.am-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px}
+.am-body{flex:1;min-width:0}
+.am-title{font-size:.75rem;font-weight:700;color:var(--text)}
+.am-detail{font-size:.65rem;color:var(--text2);margin-top:2px;line-height:1.4}
+.am-meta{font-size:.6rem;color:var(--text3);font-family:var(--mono);margin-top:4px;display:flex;gap:10px}
+.am-badge{padding:1px 6px;border-radius:4px;font-size:.58rem;font-weight:700;background:var(--red-lt);color:var(--red)}
+.am-badge.amber{background:var(--amber-lt);color:var(--amber)}
+.am-badge.blue{background:var(--blue-lt);color:var(--blue)}
+.pp-empty{padding:40px;text-align:center;color:var(--text3);font-size:.75rem}
+.pp-empty-i{font-size:1.8rem;opacity:.35;margin-bottom:8px}
+
+/* Right: candidate snapshot */
+.pp-right{display:flex;flex-direction:column;gap:12px}
+.pp-cam{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.pp-cam img{width:100%;display:block}
+.pp-cam-lbl{padding:8px 12px;font-size:.65rem;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:1px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.pp-trust{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
+.pp-trust-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.pp-trust-label{font-size:.65rem;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.pp-trust-val{font-family:var(--mono);font-size:1.3rem;font-weight:800}
+.pp-trust-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.pp-trust-fill{height:100%;border-radius:4px;transition:width .8s ease,background .5s}
+.pp-action-btn{width:100%;padding:9px;background:var(--red);color:#fff;border:none;border-radius:7px;font-size:.73rem;font-weight:700;cursor:pointer;transition:background .15s;margin-top:8px}
+.pp-action-btn:hover{background:#b91c1c}
+.pp-clear-btn{width:100%;padding:8px;background:var(--white);color:var(--text2);border:1px solid var(--border2);border-radius:7px;font-size:.72rem;font-weight:600;cursor:pointer;transition:all .15s;margin-top:6px}
+.pp-clear-btn:hover{background:var(--bg);border-color:var(--blue);color:var(--blue)}
+
+/* Unread dot on tab */
+.htab-dot{display:inline-block;width:7px;height:7px;background:var(--red);border-radius:50%;margin-left:5px;animation:bl 1s step-end infinite;vertical-align:middle}
+
+
+/* ── VIOLATION WARNING TOAST (candidate-facing) ── */
+.warn-toast{
+  position:fixed;bottom:24px;right:24px;z-index:9998;
+  background:var(--white);border:1px solid var(--border);
+  border-radius:12px;padding:14px 18px;
+  box-shadow:0 8px 32px rgba(0,0,0,.12);
+  display:flex;align-items:flex-start;gap:12px;
+  max-width:360px;min-width:280px;
+  transform:translateX(120%);transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.warn-toast.show{transform:translateX(0)}
+.warn-toast.danger{border-left:4px solid var(--red);background:#fffafa}
+.warn-toast.warn  {border-left:4px solid var(--amber);background:#fffdf5}
+.wt-icon{font-size:1.3rem;flex-shrink:0;margin-top:1px}
+.wt-body{flex:1}
+.wt-title{font-size:.78rem;font-weight:700;color:var(--text)}
+.wt-msg{font-size:.68rem;color:var(--text2);margin-top:3px;line-height:1.5}
+.wt-repeat{font-size:.6rem;color:var(--red);font-family:var(--mono);font-weight:700;margin-top:4px}
+.wt-close{font-size:.7rem;color:var(--text3);cursor:pointer;padding:2px 6px;
+  border-radius:4px;border:1px solid var(--border);background:transparent;
+  transition:all .15s;white-space:nowrap;align-self:flex-start;flex-shrink:0}
+.wt-close:hover{background:var(--bg);color:var(--text)}
+.wt-progress{height:3px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden}
+.wt-progress-bar{height:100%;background:var(--amber);border-radius:2px;
+  transition:width linear;width:100%}
+.wt-progress-bar.danger-bar{background:var(--red)}
+
+
+/* TEST TERMINATED OVERLAY */
+.terminated-overlay{display:none;position:fixed;inset:0;z-index:99999;background:#0f172a;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px}
+.terminated-overlay.show{display:flex}
+.to-icon{font-size:5rem;margin-bottom:24px}
+.to-title{font-size:2rem;font-weight:800;color:#ef4444;letter-spacing:1px;margin-bottom:12px}
+.to-sub{font-size:1rem;color:#94a3b8;margin-bottom:32px;line-height:1.6;max-width:500px}
+.to-meta{font-size:.8rem;color:#475569;font-family:var(--mono);background:#1e293b;padding:16px 28px;border-radius:10px;border:1px solid #334155;line-height:2}
+.to-meta span{color:#ef4444;font-weight:700}
+
+
+/* TEST TERMINATED OVERLAY */
+.terminated-overlay{display:none;position:fixed;inset:0;z-index:99999;background:#0f172a;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px}
+.terminated-overlay.show{display:flex}
+.to-icon{font-size:5rem;margin-bottom:24px;animation:tshake .5s ease 3}
+@keyframes tshake{0%,100%{transform:rotate(0)}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+.to-title{font-size:2rem;font-weight:800;color:#ef4444;letter-spacing:1px;margin-bottom:12px}
+.to-sub{font-size:1rem;color:#94a3b8;margin-bottom:32px;line-height:1.6}
+.to-meta{font-size:.8rem;color:#475569;font-family:var(--mono);background:#1e293b;padding:16px 28px;border-radius:10px;border:1px solid #334155;line-height:1.8}
+.to-meta span{color:#ef4444;font-weight:700}
+.cand-row{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:flex-start;gap:16px;box-shadow:var(--shadow)}
+.avatar{width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;border:2px solid var(--border)}
+.ci-name{font-size:.95rem;font-weight:700;color:var(--text)}
+.ci-email{font-size:.7rem;color:var(--text3);margin-top:2px}
+.ci-track{display:flex;align-items:center;gap:5px;margin-top:7px}
+.ci-track-lbl{font-size:.58rem;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.tk{width:24px;height:24px;background:var(--bg);border:1px solid var(--border);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--text3)}
+
+/* ── TRUST BOX — changes color based on score ── */
+.trust-box{border-radius:8px;padding:8px 20px;text-align:center;margin-left:6px;min-width:110px;border:2px solid;transition:all .5s}
+.trust-box.ok {background:var(--green-lt);border-color:var(--green)}
+.trust-box.warn{background:var(--amber-lt);border-color:var(--amber)}
+.trust-box.crit{background:var(--red-lt);border-color:var(--red);animation:tpulse .8s ease infinite}
+@keyframes tpulse{0%,100%{box-shadow:0 0 0 0 #dc262644}50%{box-shadow:0 0 0 8px #dc262600}}
+.trust-pct{font-size:1.7rem;font-weight:800;font-family:var(--mono);line-height:1}
+.trust-box.ok  .trust-pct{color:var(--green)}
+.trust-box.warn .trust-pct{color:var(--amber)}
+.trust-box.crit .trust-pct{color:var(--red)}
+.trust-lbl{font-size:.6rem;color:var(--text3);font-weight:500;margin-top:2px;letter-spacing:.3px}
+
+/* ── PROCTOR ALERT BANNER ── */
+.alert-banner{
+  display:none;
+  background:var(--red);color:#fff;
+  padding:12px 22px;
+  border-radius:var(--radius);
+  border:1px solid #b91c1c;
+  box-shadow:0 4px 16px rgba(220,38,38,.3);
+  animation:abounce .3s ease;
+}
+@keyframes abounce{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.alert-banner.show{display:flex;align-items:center;gap:14px}
+.alert-icon{font-size:1.4rem;flex-shrink:0}
+.alert-body{flex:1}
+.alert-title{font-size:.82rem;font-weight:800;letter-spacing:.5px}
+.alert-sub{font-size:.7rem;opacity:.9;margin-top:2px}
+.alert-meta{font-size:.65rem;opacity:.75;margin-top:3px;font-family:var(--mono)}
+.alert-dismiss{
+  padding:6px 14px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);
+  border-radius:6px;font-size:.7rem;font-weight:700;color:#fff;cursor:pointer;
+  transition:background .15s;white-space:nowrap;
+}
+.alert-dismiss:hover{background:rgba(255,255,255,.3)}
+.alert-count-badge{
+  background:rgba(0,0,0,.2);border-radius:20px;padding:3px 10px;
+  font-size:.65rem;font-weight:700;white-space:nowrap;font-family:var(--mono);
+}
+
+.sess-meta{margin-left:auto;display:flex;gap:24px;align-items:flex-start;padding-top:2px}
+.sm{text-align:right}
+.sm-l{font-size:.57rem;text-transform:uppercase;letter-spacing:1px;color:var(--text3);font-weight:600}
+.sm-v{font-size:.78rem;font-weight:700;color:var(--text);margin-top:2px;font-family:var(--mono)}
+.sc-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.sc{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;box-shadow:var(--shadow)}
+.sc-ic{font-size:.82rem;color:var(--text3);margin-bottom:5px}
+.sc-v{font-size:1.5rem;font-weight:800;color:var(--text);font-family:var(--mono);line-height:1}
+.sc-v.d{color:var(--red)}.sc-v.w{color:var(--amber)}.sc-v.g{color:var(--green)}.sc-v.b{color:var(--blue)}
+.sc-l{font-size:.63rem;color:var(--text3);font-weight:500;margin-top:4px}
+.frow{display:flex;align-items:center;gap:10px}
+.dl-b{padding:7px 14px;background:var(--blue);color:#fff;border:none;border-radius:7px;font-size:.73rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px}
+.dl-b:hover{background:#1d4ed8}
+.fsel{padding:6px 10px;border:1px solid var(--border2);border-radius:7px;font-size:.73rem;color:var(--text2);background:var(--white);cursor:pointer;min-width:110px}
+.fmeta{margin-left:auto;font-size:.7rem;color:var(--text3)}
+.fmeta strong{color:var(--text)}
+.vt-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.vt{width:100%;border-collapse:collapse}
+.vt thead tr{border-bottom:1px solid var(--border)}
+.vt thead th{padding:9px 14px;text-align:left;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);background:var(--bg)}
+.vt tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+.vt tbody tr:last-child{border-bottom:none}
+.vt tbody tr:hover{background:#f8fafc}
+.vt td{padding:11px 14px;font-size:.73rem;color:var(--text2);vertical-align:middle}
+.vt-type{display:flex;align-items:center;gap:8px}
+.vt-ic{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0}
+.vt-ic.d{background:var(--red-lt)}.vt-ic.w{background:var(--amber-lt)}.vt-ic.b{background:var(--blue-lt)}
+.vt-name{font-weight:500;color:var(--text)}
+.vt-time{font-family:var(--mono);font-size:.7rem;color:var(--text3)}
+.vt-evid{width:56px;height:42px;border-radius:6px;background:var(--bg);border:1px solid var(--border);overflow:hidden;float:right;cursor:pointer;transition:all .2s;position:relative}
+.vt-evid:hover{border-color:var(--blue);transform:scale(1.05);box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.vt-evid img{width:100%;height:100%;object-fit:cover;display:block}
+.vt-evid-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:.85rem}
+
+/* Lightbox */
+.lightbox{display:none;position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,.85);align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.lightbox.show{display:flex}
+.lightbox img{max-width:80vw;max-height:75vh;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5);border:2px solid rgba(255,255,255,.1)}
+.lightbox-meta{color:#fff;font-size:.8rem;font-family:var(--mono);opacity:.8;text-align:center}
+.lightbox-close{position:fixed;top:20px;right:24px;color:#fff;font-size:1.4rem;cursor:pointer;opacity:.7;transition:opacity .15s;background:rgba(255,255,255,.1);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center}
+.lightbox-close:hover{opacity:1;background:rgba(255,255,255,.2)}
+.v-empty{padding:36px;text-align:center;color:var(--text3);font-size:.77rem}
+.v-empty-i{font-size:1.6rem;margin-bottom:6px;opacity:.35}
+.rb{padding:4px 10px;border-radius:20px;font-size:.63rem;font-weight:700}
+.rb.rN{background:var(--green-lt);color:var(--green)}
+.rb.rL{background:var(--amber-lt);color:var(--amber)}
+.rb.rM{background:#fff3e0;color:#e65100}
+.rb.rH{background:var(--red-lt);color:var(--red);animation:fla .6s ease infinite}
+@keyframes fla{0%,100%{opacity:1}50%{opacity:.5}}
+.ta{position:fixed;top:0;left:0;right:0;z-index:9999;background:var(--red);color:#fff;text-align:center;padding:9px;font-weight:700;font-size:.74rem;letter-spacing:1px;transform:translateY(-100%);transition:transform .25s ease}
+.ta.on{transform:translateY(0)}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── CODE ANALYSIS TAB ── */
+.ca-wrap{display:flex;flex-direction:column;gap:14px;flex:1}
+.ca-top{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ca-editor-box{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}
+.ca-editor-hdr{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ca-editor-title{font-size:.72rem;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:1px}
+.ca-sid{padding:5px 10px;border:1px solid var(--border2);border-radius:6px;font-size:.72rem;color:var(--text2);background:var(--bg);width:160px;font-family:var(--mono)}
+.ca-textarea{width:100%;min-height:220px;padding:14px;font-family:var(--mono);font-size:.75rem;border:none;outline:none;resize:vertical;color:var(--text);background:var(--bg);line-height:1.6}
+.ca-actions{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center}
+.ca-analyze-btn{padding:8px 20px;background:var(--blue);color:#fff;border:none;border-radius:7px;font-size:.75rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s}
+.ca-analyze-btn:hover{background:#1d4ed8}
+.ca-analyze-btn:disabled{background:var(--border2);cursor:not-allowed}
+.ca-store-btn{padding:8px 14px;background:var(--white);border:1px solid var(--border2);border-radius:7px;font-size:.73rem;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s}
+.ca-store-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-lt)}
+.ca-loading{font-size:.72rem;color:var(--text3);display:none;align-items:center;gap:6px}
+.ca-spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Results panel */
+.ca-results{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:10px}
+.ca-results-empty{text-align:center;color:var(--text3);padding:40px;font-size:.78rem}
+.ca-results-empty-i{font-size:1.8rem;opacity:.35;margin-bottom:8px}
+
+/* Integrity score ring */
+.ca-score-row{display:flex;align-items:center;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.ca-ring-wrap{position:relative;width:80px;height:80px;flex-shrink:0}
+.ca-ring-wrap svg{transform:rotate(-90deg)}
+.ca-ring-txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ca-ring-pct{font-size:1.1rem;font-weight:800;font-family:var(--mono)}
+.ca-ring-lbl{font-size:.5rem;color:var(--text3);font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.ca-score-title{font-size:.85rem;font-weight:700;color:var(--text)}
+.ca-score-sub{font-size:.68rem;color:var(--text3);margin-top:3px}
+.ca-flags{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.ca-flag{display:flex;align-items:center;gap:6px;font-size:.68rem;color:var(--red);font-weight:500}
+
+/* Metric rows */
+.ca-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ca-metric{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.ca-metric-v{font-size:1.2rem;font-weight:800;font-family:var(--mono);color:var(--text)}
+.ca-metric-v.red{color:var(--red)}.ca-metric-v.amber{color:var(--amber)}.ca-metric-v.green{color:var(--green)}.ca-metric-v.blue{color:var(--blue)}
+.ca-metric-l{font-size:.6rem;color:var(--text3);font-weight:500;margin-top:3px}
+
+/* Signals breakdown */
+.ca-signals{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.ca-signals-hdr{padding:8px 12px;background:var(--bg);font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);border-bottom:1px solid var(--border)}
+.ca-signal-row{display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--border)}
+.ca-signal-row:last-child{border-bottom:none}
+.ca-signal-name{font-size:.68rem;color:var(--text2);width:160px;flex-shrink:0}
+.ca-signal-bar-wrap{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.ca-signal-bar{height:100%;border-radius:3px;transition:width .8s ease}
+.ca-signal-pct{font-size:.65rem;font-family:var(--mono);color:var(--text3);width:36px;text-align:right;flex-shrink:0}
+
+
+/* ── PROCTOR PANEL ── */
+.pp-wrap{display:flex;flex-direction:column;gap:14px;flex:1}
+.pp-grid{display:grid;grid-template-columns:1fr 340px;gap:14px;flex:1;min-height:0}
+
+/* Stats bar */
+.pp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.pp-stat{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;box-shadow:var(--shadow)}
+.pp-stat-v{font-family:var(--mono);font-size:1.4rem;font-weight:800;color:var(--text)}
+.pp-stat-v.red{color:var(--red)}.pp-stat-v.amber{color:var(--amber)}.pp-stat-v.green{color:var(--green)}.pp-stat-v.blue{color:var(--blue)}
+.pp-stat-l{font-size:.62rem;color:var(--text3);font-weight:500;margin-top:3px}
+
+/* Alert feed */
+.pp-feed{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden;flex:1}
+.pp-feed-hdr{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.pp-feed-title{font-size:.72rem;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:1px}
+.pp-feed-badge{background:var(--red);color:#fff;border-radius:10px;padding:2px 8px;font-size:.62rem;font-weight:800;font-family:var(--mono)}
+.pp-feed-body{flex:1;overflow-y:auto;padding:10px}
+.pp-feed-body::-webkit-scrollbar{width:3px}
+.pp-feed-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── CODE ANALYSIS TAB ── */
+.ca-wrap{display:flex;flex-direction:column;gap:14px;flex:1}
+.ca-top{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ca-editor-box{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}
+.ca-editor-hdr{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ca-editor-title{font-size:.72rem;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:1px}
+.ca-sid{padding:5px 10px;border:1px solid var(--border2);border-radius:6px;font-size:.72rem;color:var(--text2);background:var(--bg);width:160px;font-family:var(--mono)}
+.ca-textarea{width:100%;min-height:220px;padding:14px;font-family:var(--mono);font-size:.75rem;border:none;outline:none;resize:vertical;color:var(--text);background:var(--bg);line-height:1.6}
+.ca-actions{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center}
+.ca-analyze-btn{padding:8px 20px;background:var(--blue);color:#fff;border:none;border-radius:7px;font-size:.75rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s}
+.ca-analyze-btn:hover{background:#1d4ed8}
+.ca-analyze-btn:disabled{background:var(--border2);cursor:not-allowed}
+.ca-store-btn{padding:8px 14px;background:var(--white);border:1px solid var(--border2);border-radius:7px;font-size:.73rem;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s}
+.ca-store-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-lt)}
+.ca-loading{font-size:.72rem;color:var(--text3);display:none;align-items:center;gap:6px}
+.ca-spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Results panel */
+.ca-results{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:10px}
+.ca-results-empty{text-align:center;color:var(--text3);padding:40px;font-size:.78rem}
+.ca-results-empty-i{font-size:1.8rem;opacity:.35;margin-bottom:8px}
+
+/* Integrity score ring */
+.ca-score-row{display:flex;align-items:center;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.ca-ring-wrap{position:relative;width:80px;height:80px;flex-shrink:0}
+.ca-ring-wrap svg{transform:rotate(-90deg)}
+.ca-ring-txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ca-ring-pct{font-size:1.1rem;font-weight:800;font-family:var(--mono)}
+.ca-ring-lbl{font-size:.5rem;color:var(--text3);font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.ca-score-title{font-size:.85rem;font-weight:700;color:var(--text)}
+.ca-score-sub{font-size:.68rem;color:var(--text3);margin-top:3px}
+.ca-flags{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.ca-flag{display:flex;align-items:center;gap:6px;font-size:.68rem;color:var(--red);font-weight:500}
+
+/* Metric rows */
+.ca-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ca-metric{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.ca-metric-v{font-size:1.2rem;font-weight:800;font-family:var(--mono);color:var(--text)}
+.ca-metric-v.red{color:var(--red)}.ca-metric-v.amber{color:var(--amber)}.ca-metric-v.green{color:var(--green)}.ca-metric-v.blue{color:var(--blue)}
+.ca-metric-l{font-size:.6rem;color:var(--text3);font-weight:500;margin-top:3px}
+
+/* Signals breakdown */
+.ca-signals{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.ca-signals-hdr{padding:8px 12px;background:var(--bg);font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);border-bottom:1px solid var(--border)}
+.ca-signal-row{display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--border)}
+.ca-signal-row:last-child{border-bottom:none}
+.ca-signal-name{font-size:.68rem;color:var(--text2);width:160px;flex-shrink:0}
+.ca-signal-bar-wrap{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.ca-signal-bar{height:100%;border-radius:3px;transition:width .8s ease}
+.ca-signal-pct{font-size:.65rem;font-family:var(--mono);color:var(--text3);width:36px;text-align:right;flex-shrink:0}
+
+
+/* Alert message card */
+.alert-msg{
+  display:flex;gap:10px;padding:10px 12px;border-radius:8px;
+  border:1px solid var(--border);margin-bottom:6px;
+  border-left:3px solid var(--border);
+  animation:slideIn .3s ease;background:var(--bg);
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.alert-msg.critical{border-left-color:var(--red);background:#fff8f8}
+.alert-msg.high    {border-left-color:#f97316;background:#fff8f0}
+.alert-msg.medium  {border-left-color:var(--amber);background:#fffdf5}
+.alert-msg.low     {border-left-color:var(--blue);background:#f8faff}
+.am-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px}
+.am-body{flex:1;min-width:0}
+.am-title{font-size:.75rem;font-weight:700;color:var(--text)}
+.am-detail{font-size:.65rem;color:var(--text2);margin-top:2px;line-height:1.4}
+.am-meta{font-size:.6rem;color:var(--text3);font-family:var(--mono);margin-top:4px;display:flex;gap:10px}
+.am-badge{padding:1px 6px;border-radius:4px;font-size:.58rem;font-weight:700;background:var(--red-lt);color:var(--red)}
+.am-badge.amber{background:var(--amber-lt);color:var(--amber)}
+.am-badge.blue{background:var(--blue-lt);color:var(--blue)}
+.pp-empty{padding:40px;text-align:center;color:var(--text3);font-size:.75rem}
+.pp-empty-i{font-size:1.8rem;opacity:.35;margin-bottom:8px}
+
+/* Right: candidate snapshot */
+.pp-right{display:flex;flex-direction:column;gap:12px}
+.pp-cam{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.pp-cam img{width:100%;display:block}
+.pp-cam-lbl{padding:8px 12px;font-size:.65rem;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:1px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.pp-trust{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
+.pp-trust-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.pp-trust-label{font-size:.65rem;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.pp-trust-val{font-family:var(--mono);font-size:1.3rem;font-weight:800}
+.pp-trust-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.pp-trust-fill{height:100%;border-radius:4px;transition:width .8s ease,background .5s}
+.pp-action-btn{width:100%;padding:9px;background:var(--red);color:#fff;border:none;border-radius:7px;font-size:.73rem;font-weight:700;cursor:pointer;transition:background .15s;margin-top:8px}
+.pp-action-btn:hover{background:#b91c1c}
+.pp-clear-btn{width:100%;padding:8px;background:var(--white);color:var(--text2);border:1px solid var(--border2);border-radius:7px;font-size:.72rem;font-weight:600;cursor:pointer;transition:all .15s;margin-top:6px}
+.pp-clear-btn:hover{background:var(--bg);border-color:var(--blue);color:var(--blue)}
+
+/* Unread dot on tab */
+.htab-dot{display:inline-block;width:7px;height:7px;background:var(--red);border-radius:50%;margin-left:5px;animation:bl 1s step-end infinite;vertical-align:middle}
+
+
+/* ── VIOLATION WARNING TOAST (candidate-facing) ── */
+.warn-toast{
+  position:fixed;bottom:24px;right:24px;z-index:9998;
+  background:var(--white);border:1px solid var(--border);
+  border-radius:12px;padding:14px 18px;
+  box-shadow:0 8px 32px rgba(0,0,0,.12);
+  display:flex;align-items:flex-start;gap:12px;
+  max-width:360px;min-width:280px;
+  transform:translateX(120%);transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.warn-toast.show{transform:translateX(0)}
+.warn-toast.danger{border-left:4px solid var(--red);background:#fffafa}
+.warn-toast.warn  {border-left:4px solid var(--amber);background:#fffdf5}
+.wt-icon{font-size:1.3rem;flex-shrink:0;margin-top:1px}
+.wt-body{flex:1}
+.wt-title{font-size:.78rem;font-weight:700;color:var(--text)}
+.wt-msg{font-size:.68rem;color:var(--text2);margin-top:3px;line-height:1.5}
+.wt-repeat{font-size:.6rem;color:var(--red);font-family:var(--mono);font-weight:700;margin-top:4px}
+.wt-close{font-size:.7rem;color:var(--text3);cursor:pointer;padding:2px 6px;
+  border-radius:4px;border:1px solid var(--border);background:transparent;
+  transition:all .15s;white-space:nowrap;align-self:flex-start;flex-shrink:0}
+.wt-close:hover{background:var(--bg);color:var(--text)}
+.wt-progress{height:3px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden}
+.wt-progress-bar{height:100%;background:var(--amber);border-radius:2px;
+  transition:width linear;width:100%}
+.wt-progress-bar.danger-bar{background:var(--red)}
+
+
+/* TEST TERMINATED OVERLAY */
+.terminated-overlay{display:none;position:fixed;inset:0;z-index:99999;background:#0f172a;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px}
+.terminated-overlay.show{display:flex}
+.to-icon{font-size:5rem;margin-bottom:24px}
+.to-title{font-size:2rem;font-weight:800;color:#ef4444;letter-spacing:1px;margin-bottom:12px}
+.to-sub{font-size:1rem;color:#94a3b8;margin-bottom:32px;line-height:1.6;max-width:500px}
+.to-meta{font-size:.8rem;color:#475569;font-family:var(--mono);background:#1e293b;padding:16px 28px;border-radius:10px;border:1px solid #334155;line-height:2}
+.to-meta span{color:#ef4444;font-weight:700}
+
+
+/* TEST TERMINATED OVERLAY */
+.terminated-overlay{display:none;position:fixed;inset:0;z-index:99999;background:#0f172a;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px}
+.terminated-overlay.show{display:flex}
+.to-icon{font-size:5rem;margin-bottom:24px;animation:tshake .5s ease 3}
+@keyframes tshake{0%,100%{transform:rotate(0)}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+.to-title{font-size:2rem;font-weight:800;color:#ef4444;letter-spacing:1px;margin-bottom:12px}
+.to-sub{font-size:1rem;color:#94a3b8;margin-bottom:32px;line-height:1.6}
+.to-meta{font-size:.8rem;color:#475569;font-family:var(--mono);background:#1e293b;padding:16px 28px;border-radius:10px;border:1px solid #334155;line-height:1.8}
+.to-meta span{color:#ef4444;font-weight:700}
+</style>
+</head>
+<body>
+
+<!-- TEST TERMINATED OVERLAY -->
+<div class="terminated-overlay" id="termOverlay">
+  <div class="to-icon">🚫</div>
+  <div class="to-title">TEST TERMINATED</div>
+  <div class="to-sub">You switched away from the exam window a second time.<br>Your session has been permanently ended and flagged for review.</div>
+  <div class="to-meta">
+    Tab Switches: <span id="toTabCount">2</span> &nbsp;|&nbsp;
+    Suspicion: <span id="toSusp">100</span> pts &nbsp;|&nbsp;
+    Terminated At: <span id="toTime">--:--:--</span><br>
+    Trust Score: <span id="toTrust">0%</span> &nbsp;|&nbsp;
+    Risk Level: <span style="color:#ef4444">HIGH RISK</span>
+  </div>
+</div>
+
+<div class="ta" id="ta">⚠ TAB SWITCH DETECTED — Candidate left the exam window</div>
+
+<div class="layout">
+  <nav class="nav">
+    <div class="nav-logo">PROCTOR AI</div>
+    <div class="ns">
+      <div class="ns-t">Session</div>
+      <div class="ni on"><div class="nd"></div>Live Monitoring</div>
+      <div class="ni"><div class="nd"></div>Session Recording</div>
+    </div>
+    <div class="ns">
+      <div class="ns-t">Results</div>
+      <div class="ni"><div class="nd"></div>All Candidates</div>
+      <div class="ni"><div class="nd"></div>Test Summary</div>
+      <div class="ni"><div class="nd"></div>Proctoring Report</div>
+    </div>
+    <div class="ns">
+      <div class="ns-t">Analysis</div>
+      <div class="ni"><div class="nd"></div>Violation Timeline</div>
+      <div class="ni"><div class="nd"></div>Risk Analysis</div>
+      <div class="ni"><div class="nd"></div>Evidence Gallery</div>
+    </div>
+    <div class="ns">
+      <div class="ns-t">Other</div>
+      <div class="ni"><div class="nd"></div>Settings</div>
+      <div class="ni"><div class="nd"></div>Export Data</div>
+    </div>
+    <div class="nav-cam">
+      <div class="nav-cam-box"><img src="/video" alt="Live"></div>
+      <div class="nav-cam-row">
+        <span class="nav-cam-lbl">CAM-01 Live</span>
+        <div class="live-b"><div class="dot"></div>LIVE</div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="hdr">
+      <div class="htabs">
+        <button class="ht" onclick="swTab('sum',this)">📋 Test Summary</button>
+        <button class="ht on" onclick="swTab('pro',this)">📹 Proctoring</button>
+        <button class="ht" onclick="swTab('rec',this)">🎬 Session Recording</button>
+        <button class="ht" id="proctorTabBtn" onclick="swTab('pp',this)">🔔 Proctor Panel<span class="htab-dot" id="ppDot" style="display:none"></span></button>
+        <button class="ht" onclick="swTab('ca',this)">🧠 Code Analysis</button>
+      </div>
+      <div class="hdr-r">
+        <div class="rb rN" id="rb">NORMAL</div>
+        <button class="pdf-b" onclick="window.print()">⬇ PDF</button>
+      </div>
+    </div>
+
+    <div class="content" id="tPro">
+
+      <!-- ── PROCTOR ALERT BANNER (hidden until trust < 50) ── -->
+      <div class="alert-banner" id="alertBanner">
+        <div class="alert-icon">🚨</div>
+        <div class="alert-body">
+          <div class="alert-title">PROCTOR ALERT — TRUST SCORE CRITICAL</div>
+          <div class="alert-sub" id="alertSub">Candidate trust score has dropped below 50%. Immediate review required.</div>
+          <div class="alert-meta" id="alertMeta">Trust: --% &nbsp;|&nbsp; Suspicion: -- pts &nbsp;|&nbsp; Time: --:--:--</div>
+        </div>
+        <div class="alert-count-badge" id="alertCount">BREACH #1</div>
+        <button class="alert-dismiss" onclick="dismissAlert()">✓ Acknowledge</button>
+      </div>
+
+      <!-- CANDIDATE ROW -->
+      <div class="cand-row">
+        <div class="avatar">👤</div>
+        <div>
+          <div class="ci-name">Candidate</div>
+          <div class="ci-email">Active Session</div>
+          <div class="ci-track">
+            <span class="ci-track-lbl">Tracking:</span>
+            <div class="tk" title="Webcam">📹</div>
+            <div class="tk" title="Microphone">🎙️</div>
+            <div class="tk" title="Screenshot">📷</div>
+            <div class="tk" title="Screen">🖥️</div>
+            <div class="tk" title="Fullscreen">⛶</div>
+            <div class="tk" title="Record">▶</div>
+          </div>
+        </div>
+        <!-- Trust box: color changes green→amber→red -->
+        <div class="trust-box ok" id="trustBox">
+          <div class="trust-pct" id="tp">--%</div>
+          <div class="trust-lbl">TRUST SCORE ℹ</div>
+        </div>
+        <div class="sess-meta">
+          <div class="sm"><div class="sm-l">Started At</div><div class="sm-v" id="sAt">--:--</div></div>
+          <div class="sm"><div class="sm-l">Duration</div><div class="sm-v" id="sDur">00:00</div></div>
+          <div class="sm"><div class="sm-l">Device</div><div class="sm-v">DESKTOP</div></div>
+        </div>
+      </div>
+
+      <!-- STAT CARDS -->
+      <div class="sc-grid">
+        <div class="sc"><div class="sc-ic">🖥️</div><div class="sc-v w" id="c0">0</div><div class="sc-l">Tab Switched</div></div>
+        <div class="sc"><div class="sc-ic">👤</div><div class="sc-v d" id="c1">0</div><div class="sc-l">No Face Detected</div></div>
+        <div class="sc"><div class="sc-ic">👥</div><div class="sc-v d" id="c2">0</div><div class="sc-l">Multiple Faces</div></div>
+        <div class="sc"><div class="sc-ic">🔊</div><div class="sc-v w" id="c3">0</div><div class="sc-l">Noise Detected</div></div>
+        <div class="sc"><div class="sc-ic">🎭</div><div class="sc-v d" id="c4">0</div><div class="sc-l">Spoof Attempts</div></div>
+      </div>
+
+      <!-- FILTER ROW -->
+      <div class="frow">
+        <button class="dl-b">⬇ Download Proctoring</button>
+        <span style="font-size:.73rem;color:var(--text2);font-weight:500">Filter</span>
+        <select class="fsel" id="fsel" onchange="applyF()">
+          <option value="">None</option>
+          <option value="tab_switched">Tab Switched</option>
+          <option value="face_not_visible">No Face</option>
+          <option value="multiple_people">Multiple Faces</option>
+          <option value="illegal_object">Illegal Object</option>
+          <option value="talking">Talking</option>
+          <option value="mouth_open">Mouth Open</option>
+          <option value="drowsy">Drowsy</option>
+          <option value="head_turned">Head Turned</option>
+          <option value="spoofing_attempt">Spoof Attempt</option>
+          <option value="loud_noise">Loud Noise</option>
+        </select>
+        <div class="fmeta">
+          Total: <strong id="tviol">0</strong> violations &nbsp;·&nbsp;
+          Suspicion: <strong id="tsusp" style="color:var(--red)">0</strong>
+        </div>
+      </div>
+
+      <!-- VIOLATIONS TABLE -->
+      <div class="vt-wrap">
+        <table class="vt">
+          <thead>
+            <tr>
+              <th>VIOLATION TYPE ↕</th>
+              <th>OCCURRED AT ↕</th>
+              <th style="text-align:right">EVIDENCE ↕</th>
+            </tr>
+          </thead>
+          <tbody id="vtb">
+            <tr><td colspan="3"><div class="v-empty"><div class="v-empty-i">✅</div>No violations recorded yet</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+
+    <!-- PROCTOR PANEL TAB -->
+    <div class="content pp-wrap" id="tPP" style="display:none">
+
+      <!-- Stats row -->
+      <div class="pp-stats">
+        <div class="pp-stat">
+          <div class="pp-stat-v red" id="ppTotalAlerts">0</div>
+          <div class="pp-stat-l">Total Alerts</div>
+        </div>
+        <div class="pp-stat">
+          <div class="pp-stat-v amber" id="ppCritical">0</div>
+          <div class="pp-stat-l">Critical (High Severity)</div>
+        </div>
+        <div class="pp-stat">
+          <div class="pp-stat-v blue" id="ppTrustPP">--%</div>
+          <div class="pp-stat-l">Current Trust Score</div>
+        </div>
+        <div class="pp-stat">
+          <div class="pp-stat-v" id="ppRiskPP" style="color:var(--green)">NORMAL</div>
+          <div class="pp-stat-l">Risk Level</div>
+        </div>
+      </div>
+
+      <div class="pp-grid">
+
+        <!-- Alert message feed -->
+        <div class="pp-feed">
+          <div class="pp-feed-hdr">
+            <span class="pp-feed-title">🔔 Live Alert Feed</span>
+            <span class="pp-feed-badge" id="ppFeedCount">0 alerts</span>
+          </div>
+          <div class="pp-feed-body" id="ppFeed">
+            <div class="pp-empty"><div class="pp-empty-i">✅</div>No alerts yet. Candidate is behaving normally.</div>
+          </div>
+        </div>
+
+        <!-- Right: cam + trust + actions -->
+        <div class="pp-right">
+          <div class="pp-cam">
+            <img src="/video" alt="Live">
+            <div class="pp-cam-lbl">
+              <span>LIVE FEED — CAM 01</span>
+              <div class="live-b"><div class="dot"></div>LIVE</div>
+            </div>
+          </div>
+          <div class="pp-trust">
+            <div class="pp-trust-row">
+              <span class="pp-trust-label">Trust Score</span>
+              <span class="pp-trust-val" id="ppTrustBar2">--%</span>
+            </div>
+            <div class="pp-trust-bar">
+              <div class="pp-trust-fill" id="ppTrustFill" style="width:100%;background:var(--green)"></div>
+            </div>
+            <button class="pp-action-btn" onclick="terminateFromProctor()">🚫 Terminate Exam</button>
+            <button class="pp-clear-btn" onclick="clearAlerts()">🗑 Clear Alert Log</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- CODE ANALYSIS TAB -->
+    <div class="content ca-wrap" id="tCA" style="display:none">
+
+      <div class="ca-top">
+
+        <!-- Left: Code editor -->
+        <div class="ca-editor-box">
+          <div class="ca-editor-hdr">
+            <span class="ca-editor-title">📝 Submit Code</span>
+            <input class="ca-sid" id="caStudentId" placeholder="Student ID" value="student_001">
+          </div>
+          <textarea class="ca-textarea" id="caCode" placeholder="Paste Python code here..."></textarea>
+          <div class="ca-actions">
+            <button class="ca-analyze-btn" id="caBtn" onclick="analyzeCode()">🧠 Analyze Code</button>
+            <button class="ca-store-btn" onclick="storeCode()">💾 Store to DB</button>
+            <div class="ca-loading" id="caLoading"><div class="ca-spinner"></div> Analyzing...</div>
+          </div>
+        </div>
+
+        <!-- Right: Results -->
+        <div class="ca-results" id="caResults">
+          <div class="ca-results-empty">
+            <div class="ca-results-empty-i">🧠</div>
+            Paste code and click Analyze to see results.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Signals breakdown (full width) -->
+      <div class="ca-signals" id="caSignals" style="display:none">
+        <div class="ca-signals-hdr">AI Detection Signal Breakdown</div>
+        <div id="caSignalRows"></div>
+      </div>
+
+    </div>
+
+    <div class="content" id="tSum" style="display:none">
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:40px;text-align:center;color:var(--text3)">
+        <div style="font-size:2.2rem;margin-bottom:10px">📋</div>
+        Test Summary will be available at session end.
+      </div>
+    </div>
+
+    <div class="content" id="tRec" style="display:none">
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:18px">
+        <div style="font-size:.72rem;color:var(--text2);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px">Live Feed</div>
+        <div style="border-radius:8px;overflow:hidden;background:#000;max-width:640px"><img src="/video" style="width:100%;display:block" alt="Live"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TRUST_CUTOFF = 50;   // ← Change this to adjust cutoff
+
+const VM={
+  tab_switched:    {i:'🖥️',s:'b',l:'Switched to different application'},
+  face_not_visible:{i:'👤',s:'d',l:'No face detected'},
+  multiple_people: {i:'👥',s:'d',l:'Multiple faces detected'},
+  illegal_object:  {i:'📱',s:'d',l:'Illegal object detected'},
+  low_attention:   {i:'😶',s:'w',l:'Low attention score'},
+  drowsy:          {i:'😴',s:'w',l:'Drowsiness detected'},
+  head_turned:     {i:'↩️',s:'w',l:'Head turned away'},
+  talking:         {i:'🗣️',s:'d',l:'Talking detected'},
+  loud_noise:      {i:'🔊',s:'w',l:'Noise detected'},
+  spoofing_attempt:{i:'🎭',s:'d',l:'Spoofing attempt detected'},
+  mouth_open:      {i:'👄',s:'w',l:'Mouth open / whispering'},
+};
+const RK={'NORMAL':'rN','LOW':'rL','MEDIUM':'rM','HIGH':'rH'};
+
+let t0=null,tabN=0,lastVL=0,aT=null,allV=[];
+let alertDismissed=false;
+
+window.addEventListener('load',()=>{
+  t0=new Date();
+  document.getElementById('sAt').textContent=t0.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  setInterval(()=>{
+    const d=Math.floor((Date.now()-t0)/1000);
+    document.getElementById('sDur').textContent=`${String(Math.floor(d/60)).padStart(2,'0')}:${String(d%60).padStart(2,'0')}`;
+  },1000);
+  poll(); setInterval(poll,2000);
+});
+
+async function poll(){
+  try{
+    const r=await fetch('/analytics'),d=await r.json();
+    if(d.status==='warming_up')return;
+
+    const su=d.suspicion_score||0;
+    const vi=d.violations||[];
+    const ri=d.risk||'NORMAL';
+    const trust=d.trust_score!==undefined ? d.trust_score : Math.max(0,100-su);
+    const alertActive=d.alert_active||false;
+    const latestAlert=d.latest_alert||null;
+    const breachCount=d.breach_count||0;
+    const tabCount=d.tab_switch_count||0;
+    const terminated=d.test_terminated||false;
+
+    allV=vi;
+
+    // ── TEST TERMINATED CHECK (highest priority) ─────────────────────────
+    if(terminated){
+      showTerminated(su, trust, tabCount);
+      return;  // stop all other updates
+    }
+
+    // ── Trust score display + color ──────────────────────────────────────
+    document.getElementById('tp').textContent=trust+'%';
+    document.getElementById('tsusp').textContent=su;
+    document.getElementById('tviol').textContent=vi.length;
+
+    const tb=document.getElementById('trustBox');
+    if(trust>=70)       tb.className='trust-box ok';
+    else if(trust>=50)  tb.className='trust-box warn';
+    else                tb.className='trust-box crit';
+
+    // ── Risk badge ───────────────────────────────────────────────────────
+    const k=ri.replace(' RISK','').trim();
+    const rb=document.getElementById('rb');
+    rb.className='rb '+(RK[k]||'rN');
+    rb.textContent=ri;
+
+    // ── Tab switch warning banner (1st switch) ───────────────────────────
+    if(tabCount===1 && !tabWarnShown){
+      tabWarnShown=true;
+      showTabWarning();
+    }
+
+    // ── PROCTOR ALERT ────────────────────────────────────────────────────
+    if(alertActive && !alertDismissed && latestAlert){
+      showProctorAlert(trust, su, latestAlert, breachCount);
+    } else if(!alertActive){
+      alertDismissed=false;
+      document.getElementById('alertBanner').classList.remove('show');
+    }
+
+    // ── Stat cards ───────────────────────────────────────────────────────
+    const cn=(t)=>vi.filter(v=>v.type===t).length;
+    document.getElementById('c0').textContent=cn('tab_switched')+tabN;
+    document.getElementById('c1').textContent=cn('face_not_visible');
+    document.getElementById('c2').textContent=cn('multiple_people');
+    document.getElementById('c3').textContent=cn('loud_noise')+cn('talking');
+    document.getElementById('c4').textContent=cn('spoofing_attempt');
+
+    renderT(vi);
+    checkWarning(d);
+    updateProctorPanel(d);
+  }catch(e){}
+}
+
+function showTerminated(susp, trust, tabCount){
+  const ov=document.getElementById('termOverlay');
+  ov.classList.add('show');
+  document.getElementById('toTabCount').textContent=tabCount;
+  document.getElementById('toSusp').textContent=susp;
+  document.getElementById('toTrust').textContent=trust+'%';
+  document.getElementById('toTime').textContent=new Date().toLocaleTimeString();
+}
+
+let tabWarnShown=false;
+function showTabWarning(){
+  // Reuse existing tab alert banner with different message
+  const bn=document.getElementById('ta');
+  bn.textContent='⚠ WARNING: Tab switch detected (+50 suspicion). ONE MORE SWITCH WILL TERMINATE YOUR TEST!';
+  bn.style.background='#d97706';
+  bn.classList.add('on');
+  // Keep visible for 8 seconds (longer than normal)
+  setTimeout(()=>bn.classList.remove('on'), 8000);
+}
+
+function showProctorAlert(trust, susp, alert, breachCount){
+  const banner=document.getElementById('alertBanner');
+  banner.classList.add('show');
+  document.getElementById('alertSub').textContent=
+    `Candidate trust score has dropped to ${trust}% (below ${TRUST_CUTOFF}% cutoff). Immediate review required.`;
+  document.getElementById('alertMeta').textContent=
+    `Trust: ${trust}%  |  Suspicion: ${susp} pts  |  Time: ${alert.time||'--'}`;
+  document.getElementById('alertCount').textContent=`BREACH #${breachCount}`;
+}
+
+async function dismissAlert(){
+  alertDismissed=true;
+  document.getElementById('alertBanner').classList.remove('show');
+  try{ await fetch('/alert/dismiss',{method:'POST'}); }catch(e){}
+}
+
+function renderT(vi){
+  if(vi.length===lastVL)return;
+  lastVL=vi.length;
+  const f=document.getElementById('fsel').value;
+  const filtered=f?vi.filter(v=>v.type===f):vi;
+  const b=document.getElementById('vtb');
+  if(!filtered.length){
+    b.innerHTML='<tr><td colspan="3"><div class="v-empty"><div class="v-empty-i">✅</div>No violations recorded yet</div></td></tr>';
+    return;
+  }
+  b.innerHTML='';
+  [...filtered].reverse().forEach(v=>{
+    const m=VM[v.type]||{i:'⚠️',s:'w',l:v.type};
+    const t=(v.time||'--').replace(/_/g,':');
+    const det=v.detail?` for ${v.detail}s`:'';
+    const url=v.evidence_url||'';
+    const evidHtml = url
+      ? `<div class="vt-evid" onclick="openLightbox('${url}','${m.l} — ${t}')" title="Click to view screenshot">
+           <img src="${url}" alt="evidence" onerror="this.parentNode.innerHTML='<div class=vt-evid-placeholder>${m.i}</div>'">
+         </div>`
+      : `<div class="vt-evid"><div class="vt-evid-placeholder">${m.i}</div></div>`;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><div class="vt-type"><div class="vt-ic ${m.s}">${m.i}</div><span class="vt-name">${m.l}${det}</span></div></td>
+      <td><span class="vt-time">${t}</span></td>
+      <td>${evidHtml}</td>
+    `;
+    b.appendChild(tr);
+  });
+}
+
+function applyF(){lastVL=-1;renderT(allV);}
+
+const bn=document.getElementById('ta');
+async function fireTab(){
+  // POST to server — server handles the 2-strike logic
+  try{
+    const r=await fetch('/tab-switch',{method:'POST'});
+    const d=await r.json();
+    tabN=d.tab_switch_count||tabN+1;
+    document.getElementById('c0').textContent=tabN;
+    if(d.test_terminated){
+      showTerminated(100, 0, tabN);
+    }
+  }catch(e){
+    tabN++;
+    document.getElementById('c0').textContent=tabN;
+  }
+}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)fireTab();});
+window.addEventListener('blur',()=>{if(!document.hidden)fireTab();});
+
+function swTab(t,btn){
+  document.querySelectorAll('.ht').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+  document.getElementById('tPro').style.display=t==='pro'?'flex':'none';
+  document.getElementById('tSum').style.display=t==='sum'?'flex':'none';
+  document.getElementById('tRec').style.display=t==='rec'?'flex':'none';
+  document.getElementById('tPP').style.display =t==='pp' ?'flex':'none';
+  document.getElementById('tCA').style.display =t==='ca' ?'flex':'none';
+  if(t==='pp') document.getElementById('ppDot').style.display='none';
+}
+
+// ── VIOLATION WARNING TOAST ────────────────────────────────────────────────
+let lastWarningTime = null;
+let toastTimer      = null;
+let toastBarTimer   = null;
+
+function checkWarning(data) {
+  const w = data.active_warning;
+  if (!w) return;
+
+  // Only show if it's a new warning (by time field)
+  if (lastWarningTime === w.time) return;
+  lastWarningTime = w.time;
+
+  showToast(w);
+}
+
+function showToast(w) {
+  const toast  = document.getElementById('warnToast');
+  const isDanger = ['illegal_object','multiple_people','spoofing_attempt','talking'].includes(w.event);
+
+  document.getElementById('wtIcon').textContent  = w.title.split(' ')[0];
+  document.getElementById('wtTitle').textContent = w.title;
+  document.getElementById('wtMsg').textContent   = w.message;
+
+  const repeatEl = document.getElementById('wtRepeat');
+  if (w.repeat > 1) {
+    repeatEl.textContent = `Occurrence #${w.repeat} — Penalty: +${w.penalty} pts`;
+    repeatEl.style.display = 'block';
+  } else {
+    repeatEl.textContent = `Penalty: +${w.penalty} pts`;
+    repeatEl.style.display = 'block';
+  }
+
+  const bar = document.getElementById('wtBar');
+  bar.className = 'wt-progress-bar' + (isDanger ? ' danger-bar' : '');
+  toast.className = 'warn-toast show ' + (isDanger ? 'danger' : 'warn');
+
+  // Auto-dismiss after 6 seconds with shrinking progress bar
+  bar.style.transition = 'none';
+  bar.style.width = '100%';
+  clearTimeout(toastTimer);
+  clearTimeout(toastBarTimer);
+
+  requestAnimationFrame(() => {
+    bar.style.transition = 'width 6s linear';
+    bar.style.width = '0%';
+  });
+
+  toastTimer = setTimeout(() => dismissToast(), 6000);
+}
+
+function dismissToast() {
+  document.getElementById('warnToast').classList.remove('show');
+  clearTimeout(toastTimer);
+}
+
+// Hook into existing poll() — call checkWarning(d) inside poll
+// Already handled below by patching poll
+
+
+// ── PROCTOR PANEL ─────
+// ── PROCTOR PANEL ──────────────────────────────────────────────────────────
+const ALERT_CONFIG = {
+  illegal_object:   { sev:'critical', icon:'📱', title:'Illegal Object Detected',      detail:'A prohibited item (phone/book/laptop) is visible on camera.' },
+  multiple_people:  { sev:'critical', icon:'👥', title:'Multiple People Detected',      detail:'More than one person is visible in the exam frame.' },
+  spoofing_attempt: { sev:'critical', icon:'🎭', title:'Spoofing Attempt Detected',     detail:'Identity verification failed. Camera feed may be fake.' },
+  tab_switched:     { sev:'high',     icon:'🖥️', title:'Tab Switch Detected',           detail:'Candidate navigated away from the exam window.' },
+  talking:          { sev:'high',     icon:'🗣️', title:'Talking Detected',              detail:'Candidate appears to be speaking during the exam.' },
+  face_not_visible: { sev:'high',     icon:'👤', title:'Face Not Visible',              detail:'Candidate face has left the camera frame.' },
+  head_turned:      { sev:'medium',   icon:'↩️', title:'Head Turn Detected',            detail:'Candidate turned their head away from the screen.' },
+  loud_noise:       { sev:'medium',   icon:'🔊', title:'Loud Noise Detected',           detail:'Suspicious audio spike detected in the environment.' },
+  mouth_open:       { sev:'medium',   icon:'👄', title:'Whispering Suspected',          detail:'Candidate mouth movement suggests whispering.' },
+  drowsy:           { sev:'low',      icon:'😴', title:'Drowsiness Detected',           detail:'Candidate appears drowsy or inattentive.' },
+  low_attention:    { sev:'low',      icon:'😶', title:'Low Attention Score',           detail:'Attention score has dropped significantly.' },
+  BURST_PATTERN:    { sev:'critical', icon:'⚡', title:'Burst Pattern Detected',        detail:'Multiple violations in a short window — suspicious activity.' },
+};
+
+let ppAlerts        = [];   // all proctor alerts log
+let ppLastViolLen   = 0;
+let ppUnreadCount   = 0;
+
+function updateProctorPanel(data) {
+  const vi    = data.violations || [];
+  const trust = data.trust_score !== undefined ? data.trust_score : Math.max(0, 100 - (data.suspicion_score||0));
+  const risk  = data.risk || 'NORMAL';
+  const tl    = data.timeline || [];
+
+  // ── Stats ────────────────────────────────────────────────────────────────
+  const critical = ppAlerts.filter(a => a.sev === 'critical' || a.sev === 'high').length;
+  document.getElementById('ppTotalAlerts').textContent  = ppAlerts.length;
+  document.getElementById('ppCritical').textContent     = critical;
+  document.getElementById('ppTrustPP').textContent      = trust + '%';
+  document.getElementById('ppTrustBar2').textContent    = trust + '%';
+  document.getElementById('ppRiskPP').textContent       = risk;
+  document.getElementById('ppRiskPP').style.color       =
+    risk==='HIGH RISK'?'var(--red)':risk==='MEDIUM RISK'?'#f97316':risk==='LOW RISK'?'var(--amber)':'var(--green)';
+
+  // ── Trust bar ─────────────────────────────────────────────────────────────
+  const fill = document.getElementById('ppTrustFill');
+  fill.style.width = trust + '%';
+  fill.style.background = trust >= 70 ? 'var(--green)' : trust >= 50 ? 'var(--amber)' : 'var(--red)';
+
+  // ── New violations → new alert messages ──────────────────────────────────
+  if (vi.length > ppLastViolLen) {
+    const newViols = vi.slice(ppLastViolLen);
+    ppLastViolLen  = vi.length;
+
+    newViols.forEach(v => {
+      const cfg = ALERT_CONFIG[v.type] || { sev:'low', icon:'⚠️', title: v.type, detail:'Violation detected.' };
+      const t   = (v.time || '--').replace(/_/g, ':');
+      const susp = data.suspicion_score || 0;
+
+      const alert = {
+        id:     Date.now() + Math.random(),
+        sev:    cfg.sev,
+        icon:   cfg.icon,
+        title:  cfg.title,
+        detail: cfg.detail,
+        time:   t,
+        susp:   susp,
+        trust:  trust,
+        type:   v.type,
+      };
+      ppAlerts.unshift(alert);  // newest first
+      ppUnreadCount++;
+    });
+
+    // Also check timeline for BURST_PATTERN (not in violations list)
+    tl.forEach(e => {
+      if (e.event === 'BURST_PATTERN') {
+        const alreadyLogged = ppAlerts.some(a => a.type === 'BURST_PATTERN' && a.time === e.time);
+        if (!alreadyLogged) {
+          const cfg = ALERT_CONFIG['BURST_PATTERN'];
+          ppAlerts.unshift({
+            id: Date.now(), sev: cfg.sev, icon: cfg.icon,
+            title: cfg.title, detail: cfg.detail,
+            time: e.time, susp: e.score, trust: Math.max(0,100-e.score), type:'BURST_PATTERN'
+          });
+          ppUnreadCount++;
+        }
+      }
+    });
+
+    renderProctorFeed();
+
+    // Show unread dot if not on proctor panel
+    const ppActive = document.getElementById('tPP').style.display !== 'none';
+    if (!ppActive && ppUnreadCount > 0) {
+      document.getElementById('ppDot').style.display = 'inline-block';
+    }
+  }
+
+  document.getElementById('ppFeedCount').textContent = ppAlerts.length + ' alerts';
+}
+
+function renderProctorFeed() {
+  const feed = document.getElementById('ppFeed');
+  if (!ppAlerts.length) {
+    feed.innerHTML = '<div class="pp-empty"><div class="pp-empty-i">✅</div>No alerts yet.</div>';
+    return;
+  }
+
+  feed.innerHTML = '';
+  ppAlerts.forEach(a => {
+    const div = document.createElement('div');
+    div.className = `alert-msg ${a.sev}`;
+
+    const badgeClass = a.sev === 'critical' ? '' : a.sev === 'high' ? '' : a.sev === 'medium' ? 'amber' : 'blue';
+    div.innerHTML = `
+      <div class="am-icon">${a.icon}</div>
+      <div class="am-body">
+        <div class="am-title">${a.title}</div>
+        <div class="am-detail">${a.detail}</div>
+        <div class="am-meta">
+          <span>🕐 ${a.time}</span>
+          <span>📊 Suspicion: ${a.susp}</span>
+          <span>🛡 Trust: ${a.trust}%</span>
+          <span class="am-badge ${badgeClass}">${a.sev.toUpperCase()}</span>
+        </div>
+      </div>
+    `;
+    feed.appendChild(div);
+  });
+}
+
+function clearAlerts() {
+  ppAlerts      = [];
+  ppUnreadCount = 0;
+  ppLastViolLen = 0;
+  document.getElementById('ppDot').style.display = 'none';
+  renderProctorFeed();
+  document.getElementById('ppFeedCount').textContent = '0 alerts';
+  document.getElementById('ppTotalAlerts').textContent = '0';
+  document.getElementById('ppCritical').textContent    = '0';
+}
+
+function terminateFromProctor() {
+  if (confirm('Are you sure you want to terminate this exam session?')) {
+    showTerminated(
+      parseInt(document.getElementById('ppTotalAlerts').textContent) || 100,
+      parseInt(document.getElementById('ppTrustPP').textContent) || 0,
+      2
+    );
+  }
+}
+
+
+// ── EVIDENCE LIGHTBOX ──────────────────────────────────────────────────────
+function openLightbox(url, meta) {
+  document.getElementById('lbImg').src   = url;
+  document.getElementById('lbMeta').textContent = '📸 ' + meta;
+  document.getElementById('lightbox').classList.add('show');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('show');
+  document.getElementById('lbImg').src = '';
+}
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeLightbox(); });
+
+
+// ── CODE ANALYSIS ──────────────────────────────────────────────────────────
+const SIGNAL_LABELS = {
+  perplexity_proxy:     'Perplexity (token predictability)',
+  burstiness:           'Burstiness (uniformity)',
+  comment_density:      'Comment density',
+  naming_consistency:   'Naming consistency (snake_case)',
+  line_length_variance: 'Line length uniformity',
+  structural_symmetry:  'Structural symmetry (if/else)',
+};
+
+async function analyzeCode() {
+  const code = document.getElementById('caCode').value.trim();
+  const sid  = document.getElementById('caStudentId').value.trim() || 'anonymous';
+  if (!code) { alert('Please paste code first.'); return; }
+
+  const btn  = document.getElementById('caBtn');
+  const load = document.getElementById('caLoading');
+  btn.disabled = true;
+  load.style.display = 'flex';
+
+  try {
+    const r = await fetch('/analyze_code', {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify({ code, student_id: sid, store: false })
+    });
+    const d = await r.json();
+    renderCodeResults(d);
+  } catch(e) {
+    document.getElementById('caResults').innerHTML =
+      `<div class="ca-results-empty"><div class="ca-results-empty-i">❌</div>Analysis failed: ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    load.style.display = 'none';
+  }
+}
+
+async function storeCode() {
+  const code = document.getElementById('caCode').value.trim();
+  const sid  = document.getElementById('caStudentId').value.trim();
+  if (!code || !sid) { alert('Enter student ID and code first.'); return; }
+  await fetch('/store_code', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ student_id: sid, code })
+  });
+  alert(`✅ Stored in plagiarism database as "${sid}"`);
+}
+
+function renderCodeResults(d) {
+  const score    = d.integrity_score || 0;
+  const plag     = d.plagiarism     || {};
+  const ai       = d.ai_detection   || {};
+  const perf     = d.performance    || {};
+  const flags    = d.flags          || [];
+
+  // Score color
+  const scoreColor = score >= 70 ? 'var(--green)' : score >= 45 ? 'var(--amber)' : 'var(--red)';
+  const circumf    = 2 * Math.PI * 30;
+  const dash       = circumf - (score / 100) * circumf;
+
+  const flagsHtml = flags.length
+    ? flags.map(f => `<div class="ca-flag">⚠ ${f}</div>`).join('')
+    : '<div class="ca-flag" style="color:var(--green)">✅ No issues detected</div>';
+
+  const plagColor  = plag.score >= 0.80 ? 'red' : plag.score >= 0.50 ? 'amber' : 'green';
+  const aiColor    = ai.probability >= 0.65 ? 'red' : ai.probability >= 0.45 ? 'amber' : 'green';
+  const miColor    = perf.mi_rank === 'A' ? 'green' : perf.mi_rank === 'B' ? 'blue' : perf.mi_rank === 'C' ? 'amber' : 'red';
+  const ccColor    = perf.complexity_rank === 'A' ? 'green' : perf.complexity_rank === 'B' ? 'blue' : 'red';
+
+  document.getElementById('caResults').innerHTML = `
+    <!-- Integrity ring -->
+    <div class="ca-score-row">
+      <div class="ca-ring-wrap">
+        <svg width="80" height="80" viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r="30" fill="none" stroke="var(--border)" stroke-width="8"/>
+          <circle cx="40" cy="40" r="30" fill="none" stroke="${scoreColor}" stroke-width="8"
+            stroke-dasharray="${circumf}" stroke-dashoffset="${dash}"
+            stroke-linecap="round" style="transition:stroke-dashoffset .8s ease"/>
+        </svg>
+        <div class="ca-ring-txt">
+          <div class="ca-ring-pct" style="color:${scoreColor}">${score}</div>
+          <div class="ca-ring-lbl">Integrity</div>
+        </div>
+      </div>
+      <div class="ca-score-info">
+        <div class="ca-score-title">${d.clean ? '✅ Code appears clean' : '⚠ Issues detected'}</div>
+        <div class="ca-score-sub">Student: ${d.student_id || 'unknown'}</div>
+        <div class="ca-flags">${flagsHtml}</div>
+      </div>
+    </div>
+
+    <!-- Metrics grid -->
+    <div class="ca-metrics">
+      <div class="ca-metric">
+        <div class="ca-metric-v ${plagColor}">${(plag.score*100).toFixed(1)}%</div>
+        <div class="ca-metric-l">Plagiarism Score${plag.matched_student ? '<br>Match: '+plag.matched_student : ''}</div>
+      </div>
+      <div class="ca-metric">
+        <div class="ca-metric-v ${aiColor}">${(ai.probability*100).toFixed(1)}%</div>
+        <div class="ca-metric-l">AI Probability<br>${ai.verdict||''}</div>
+      </div>
+      <div class="ca-metric">
+        <div class="ca-metric-v ${miColor}">${perf.maintainability}</div>
+        <div class="ca-metric-l">Maintainability (${perf.mi_rank})</div>
+      </div>
+      <div class="ca-metric">
+        <div class="ca-metric-v ${ccColor}">${perf.complexity}</div>
+        <div class="ca-metric-l">Avg Complexity (${perf.complexity_rank})</div>
+      </div>
+      <div class="ca-metric">
+        <div class="ca-metric-v blue">${perf.loc}</div>
+        <div class="ca-metric-l">Lines of Code</div>
+      </div>
+      <div class="ca-metric">
+        <div class="ca-metric-v">${perf.quality_score}</div>
+        <div class="ca-metric-l">Quality Score</div>
+      </div>
+    </div>
+  `;
+
+  // Signals breakdown
+  const signals = ai.signals || {};
+  if (Object.keys(signals).length) {
+    document.getElementById('caSignals').style.display = 'block';
+    document.getElementById('caSignalRows').innerHTML = Object.entries(signals).map(([k, v]) => {
+      const pct   = Math.round(v * 100);
+      const color = pct >= 65 ? '#dc2626' : pct >= 45 ? '#d97706' : '#059669';
+      return `
+        <div class="ca-signal-row">
+          <span class="ca-signal-name">${SIGNAL_LABELS[k]||k}</span>
+          <div class="ca-signal-bar-wrap">
+            <div class="ca-signal-bar" style="width:${pct}%;background:${color}"></div>
+          </div>
+          <span class="ca-signal-pct">${pct}%</span>
+        </div>`;
+    }).join('');
+  }
+}
+
+</script>
+
+<!-- VIOLATION WARNING TOAST -->
+<div class="warn-toast" id="warnToast">
+  <div class="wt-icon" id="wtIcon">⚠️</div>
+  <div class="wt-body">
+    <div class="wt-title" id="wtTitle">Warning</div>
+    <div class="wt-msg" id="wtMsg">Please follow exam guidelines.</div>
+    <div class="wt-repeat" id="wtRepeat"></div>
+    <div class="wt-progress"><div class="wt-progress-bar" id="wtBar"></div></div>
+  </div>
+  <button class="wt-close" onclick="dismissToast()">✕ OK</button>
+</div>
+
+
+<!-- EVIDENCE LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lbImg" src="" alt="Evidence">
+  <div class="lightbox-meta" id="lbMeta"></div>
+</div>
+
+</body>
+</html>
