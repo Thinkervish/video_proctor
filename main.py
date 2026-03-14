@@ -17,7 +17,7 @@ from api.code_routes import router as code_router
 
 
 
-TEST_DURATION = 60
+TEST_DURATION = 60  # seconds
 app.include_router(code_router)
 
 # Initialize all agents
