@@ -17,7 +17,11 @@ class AudioAgent:
         self.running = False
 
     def start(self):
+        if self.running:
+            return
+
         self.running = True
+        self.thread = threading.Thread(target=self._listen_loop, daemon=True)
         self.thread.start()
 
     def stop(self):

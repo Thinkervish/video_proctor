@@ -1,8 +1,7 @@
 import cv2
 import time
 import numpy as np
-import threading
-import uvicorn
+
 import state
 from agents.vision_agent import VisionAgent
 from agents.attention_agent import AttentionAgent
@@ -12,13 +11,12 @@ from agents.report_agent import ReportAgent
 from agents.risk_agent import RiskAgent
 from agents.audio_agent import AudioAgent
 from agents.spoofing_agent import SpoofingAgent
-from server import app
-from api.code_routes import router as code_router
 
 
 
-TEST_DURATION = 60  # seconds
-app.include_router(code_router)
+
+
+
 
 # Initialize all agents
 vision_agent = VisionAgent()
@@ -34,7 +32,7 @@ latest_frame = None  # Global for FastAPI
 
 def run_proctoring():
     global latest_frame
-    cap = cv2.VideoCapture(0)
+
     attention_scores = []
     
     # Start Audio Listener asynchronously
@@ -42,10 +40,12 @@ def run_proctoring():
     
     start = time.time()
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
+    while state.proctoring_active:
+        frame = state.latest_frame
+        if frame is None:
+            time.sleep(0.03)  # small delay to avoid busy-waiting
+            continue
+
 
         frame = cv2.resize(frame, (640, 480))
 
@@ -69,24 +69,12 @@ def run_proctoring():
         # Optional local debugging window
         cv2.imshow("Agentic Proctor", frame)
 
-        if elapsed > TEST_DURATION:
-            break
-
+       
     # Clean shut down
     audio_agent.stop()
-    cap.release()
+    
     cv2.destroyAllWindows()
 
     avg_attention = int(np.mean(attention_scores)) if attention_scores else 0
     report_agent.generate_reports(elapsed, avg_attention)
     print("PROCTORING SESSION DONE ✅ Reports Generated.")
-
-
-if __name__ == "__main__":
-    # 1. Start AI Agent Proctoring in a background thread
-    proctor_thread = threading.Thread(target=run_proctoring, daemon=True)
-    proctor_thread.start()
-
-    # 2. Start FastAPI Server on main thread
-    print("Starting Web Dashboard on port 8000...")
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False)
