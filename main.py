@@ -32,7 +32,7 @@ latest_frame = None  # Global for FastAPI
 
 def run_proctoring():
     global latest_frame
-    cap = cv2.VideoCapture(0)
+
     attention_scores = []
     
     # Start Audio Listener asynchronously
@@ -41,9 +41,11 @@ def run_proctoring():
     start = time.time()
 
     while state.proctoring_active:
-        ret, frame = cap.read()
-        if not ret:
-            break
+        frame = state.latest_frame
+        if frame is None:
+            time.sleep(0.03)  # small delay to avoid busy-waiting
+            continue
+
 
         frame = cv2.resize(frame, (640, 480))
 
@@ -70,7 +72,7 @@ def run_proctoring():
        
     # Clean shut down
     audio_agent.stop()
-    cap.release()
+    
     cv2.destroyAllWindows()
 
     avg_attention = int(np.mean(attention_scores)) if attention_scores else 0

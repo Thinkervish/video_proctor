@@ -2,12 +2,8 @@ import time
 import os
 import cv2
 from pymongo import MongoClient
-
-# MongoDB connection
-client = MongoClient("mongodb://localhost:27017")
-db = client["ai_proctoring"]
-violations_collection = db["violations"]
-
+from  Connections.ViolationLogsDB import violation_logs_collection
+import state
 
 class ViolationAgent:
     def __init__(self, output_dir="outputs"):
@@ -19,7 +15,7 @@ class ViolationAgent:
         self.last_violation = {}
         self.cooldown = 5
 
-    def log_violation(self, vtype, frame, detail="" , assessment_id="" , email=""):
+    def log_violation(self, vtype, frame ):
         now = time.time()
 
         # cooldown check
@@ -34,11 +30,10 @@ class ViolationAgent:
         cv2.imwrite(path, frame)
 
         violation_data = {
-            "assessment_id": assessment_id,
-            "email": email,
+            "assessment_id": state.Assessment_id,
+            "email": state.Email_id,
             "time": ts,
             "type": vtype,
-            "detail": detail,
             "evidence_path": path,
             "timestamp": time.time()
         }
@@ -48,6 +43,7 @@ class ViolationAgent:
 
         # store in MongoDB
         try:
-            violations_collection.insert_one(violation_data)
+            print("Logging violation to MongoDB:", violation_data)
+            violation_logs_collection.insert_one(violation_data)
         except Exception as e:
             print("MongoDB insert error:", e)

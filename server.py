@@ -29,12 +29,11 @@ app.mount("/evidence", StaticFiles(directory="outputs/evidence"), name="evidence
 
 
 # ── Video stream ──────────────────────────────────────────────────────────
+proctor_thread = threading.Thread(target=run_proctoring, daemon=True)
 
 
-@app.on_event("startup")
 def start_proctoring():
     print("Starting AI Proctoring Thread...")
-    proctor_thread = threading.Thread(target=run_proctoring, daemon=True)
     proctor_thread.start()
 
 
@@ -59,33 +58,31 @@ def video_feed():
 @app.post("/video/frame")
 async def receive_frame(request: Request):
     state.proctoring_active = True  
-
-
     data = await request.json()
 
     image = data["image"]
-    assessment_id = data["assessment_id"]
-    email_id = data["email_id"]
+    state.Assessment_id = data["assessment_id"]
+    state.Email_id = data["email_id"]
 
     # decode base64 image
     img_bytes = base64.b64decode(image.split(",")[1])
     np_arr = np.frombuffer(img_bytes, np.uint8)
     frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-
     # store frame
     state.latest_frame = frame
 
+    start_proctoring()
     # optionally store metadata
-    state.assessment_id = assessment_id
-    state.email_id = email_id
+    
 
     return {
         "status": "frame received",
-        "assessment_id": assessment_id,
-        "email_id": email_id
+        "assessment_id": state.Assessment_id,
+        "email_id": state.Email_id
     }
 
 @app.post("/stop")
 def stop_proctoring():
     state.proctoring_active = False
+
     return {"status": "proctoring stopped"}
