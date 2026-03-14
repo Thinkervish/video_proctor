@@ -1,21 +1,43 @@
+import base64
+import numpy as np
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi import Request
 import cv2, time, os
-
+import threading
+from fastapi.middleware.cors import CORSMiddleware
 import state
-from api.code_routes import router as code_router
+from main import run_proctoring
 
 app = FastAPI()
-templates = Jinja2Templates(directory="templates")
+
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],      # allow all domains
+    allow_credentials=True,
+    allow_methods=["*"],      # allow GET, POST, PUT, DELETE etc
+    allow_headers=["*"],      # allow all headers
+)
+
 
 os.makedirs("outputs/evidence", exist_ok=True)
 app.mount("/evidence", StaticFiles(directory="outputs/evidence"), name="evidence")
-app.include_router(code_router)
+
 
 # ── Video stream ──────────────────────────────────────────────────────────
+
+
+@app.on_event("startup")
+def start_proctoring():
+    print("Starting AI Proctoring Thread...")
+    proctor_thread = threading.Thread(target=run_proctoring, daemon=True)
+    proctor_thread.start()
+
+
 def generate_frames():
     while True:
         frame = state.latest_frame
@@ -31,72 +53,39 @@ def video_feed():
     return StreamingResponse(generate_frames(),
         media_type='multipart/x-mixed-replace; boundary=frame')
 
-# ── Pages ─────────────────────────────────────────────────────────────────
-@app.get("/", response_class=HTMLResponse)
-def dashboard(request: Request):
-    return templates.TemplateResponse("dashboard.html", {"request": request})
 
-@app.get("/exam", response_class=HTMLResponse)
-def exam_page(request: Request):
-    return templates.TemplateResponse("exam.html", {"request": request})
 
-@app.get("/admin", response_class=HTMLResponse)
-def admin_page(request: Request):
-    return templates.TemplateResponse("admin.html", {"request": request})
 
-# ── Analytics ─────────────────────────────────────────────────────────────
-@app.get("/analytics")
-def get_analytics():
-    if state.risk_agent is None:
-        return {"status": "warming_up"}
-    violations = []
-    for v in (state.violation_agent.violations if state.violation_agent else []):
-        v_copy = dict(v)
-        if v_copy.get("evidence"):
-            v_copy["evidence_url"] = f"/evidence/{os.path.basename(v_copy['evidence'])}"
-        violations.append(v_copy)
+@app.post("/video/frame")
+async def receive_frame(request: Request):
+    state.proctoring_active = True  
+
+
+    data = await request.json()
+
+    image = data["image"]
+    assessment_id = data["assessment_id"]
+    email_id = data["email_id"]
+
+    # decode base64 image
+    img_bytes = base64.b64decode(image.split(",")[1])
+    np_arr = np.frombuffer(img_bytes, np.uint8)
+    frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
+    # store frame
+    state.latest_frame = frame
+
+    # optionally store metadata
+    state.assessment_id = assessment_id
+    state.email_id = email_id
+
     return {
-        "suspicion_score":  state.risk_agent.suspicion_score,
-        "trust_score":      state.risk_agent.get_trust_score(),
-        "risk":             state.risk_agent.get_risk_level(),
-        "violations":       violations,
-        "timeline":         state.risk_agent.timeline,
-        "avg_attention":    0,
-        "alert_active":     state.risk_agent.alert_active,
-        "latest_alert":     state.risk_agent.get_latest_alert(),
-        "breach_count":     state.risk_agent.cutoff_breach_count,
-        "tab_switch_count": state.risk_agent.tab_switch_count,
-        "test_terminated":  state.risk_agent.test_terminated,
-        "active_warning":   state.risk_agent.active_warning,
+        "status": "frame received",
+        "assessment_id": assessment_id,
+        "email_id": email_id
     }
 
-@app.post("/tab-switch")
-def log_tab_switch():
-    if state.risk_agent is None:
-        return {"status": "no_agent"}
-    if state.violation_agent and state.latest_frame is not None:
-        state.violation_agent.log_violation("tab_switched", state.latest_frame)
-    state.risk_agent.update_risk("tab_switched")
-    return {
-        "tab_switch_count": state.risk_agent.tab_switch_count,
-        "test_terminated":  state.risk_agent.test_terminated,
-    }
-
-@app.get("/alert/status")
-def alert_status():
-    if state.risk_agent is None:
-        return {"alert_active": False}
-    return {
-        "alert_active":    state.risk_agent.alert_active,
-        "trust_score":     state.risk_agent.get_trust_score(),
-        "suspicion":       state.risk_agent.suspicion_score,
-        "breach_count":    state.risk_agent.cutoff_breach_count,
-        "latest_alert":    state.risk_agent.get_latest_alert(),
-        "test_terminated": state.risk_agent.test_terminated,
-    }
-
-@app.post("/alert/dismiss")
-def dismiss_alert():
-    if state.risk_agent:
-        state.risk_agent.alert_active = False
-    return {"status": "dismissed"}
+@app.post("/stop")
+def stop_proctoring():
+    state.proctoring_active = False
+    return {"status": "proctoring stopped"}

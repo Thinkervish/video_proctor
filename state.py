@@ -10,3 +10,5 @@ Shared runtime state between:
 latest_frame = None
 risk_agent = None
 violation_agent = None
+
+proctoring_active = True
