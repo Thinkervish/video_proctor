@@ -59,7 +59,7 @@ def run_proctoring():
         # -----------------------------------------
         vision_data = vision_agent.analyze_vision(frame, camera_type)
 
-        attention_data = attention_agent.analyze_attention(frame, camera_type)
+        attention_data = attention_agent.analyze(frame, camera_type)
 
         audio_data = audio_agent.analyze_audio()
 

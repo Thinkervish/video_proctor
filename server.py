@@ -28,14 +28,17 @@ os.makedirs("outputs/evidence", exist_ok=True)
 app.mount("/evidence", StaticFiles(directory="outputs/evidence"), name="evidence")
 
 
-# ── Video stream ──────────────────────────────────────────────────────────
-proctor_thread = threading.Thread(target=run_proctoring, daemon=True)
 
+proctor_thread = None  # thread will be created on first start
 
 def start_proctoring():
-    print("Starting AI Proctoring Thread...")
-    proctor_thread.start()
-
+    global proctor_thread
+    if proctor_thread is None or not proctor_thread.is_alive():
+        print("Starting AI Proctoring Thread...")
+        proctor_thread = threading.Thread(target=run_proctoring, daemon=True)
+        proctor_thread.start()
+    else:
+        print("Proctoring thread already running.")
 
 def generate_frames():
     while True:
@@ -68,12 +71,11 @@ async def receive_frame(request: Request):
     img_bytes = base64.b64decode(image.split(",")[1])
     np_arr = np.frombuffer(img_bytes, np.uint8)
     frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
     # store frame
     state.latest_frame = frame
 
-    start_proctoring()
-    # optionally store metadata
-    
+    start_proctoring()  # safe to call multiple times now
 
     return {
         "status": "frame received",

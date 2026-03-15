@@ -1,9 +1,10 @@
 import time
 import os
 import cv2
-from pymongo import MongoClient
-from  Connections.ViolationLogsDB import violation_logs_collection
+from Connections.ViolationLogsDB import violation_logs_collection
 import state
+import cloudinary.uploader
+from Connections.EvidanceImage import cloudinary
 
 class ViolationAgent:
     def __init__(self, output_dir="outputs"):
@@ -15,7 +16,7 @@ class ViolationAgent:
         self.last_violation = {}
         self.cooldown = 5
 
-    def log_violation(self, vtype, frame ):
+    def log_violation(self, vtype, frame, extra=None):
         now = time.time()
 
         # cooldown check
@@ -25,16 +26,29 @@ class ViolationAgent:
         self.last_violation[vtype] = now
         ts = time.strftime("%H_%M_%S")
 
-        # save evidence image
-        path = os.path.join(self.evidence_dir, f"{vtype}_{ts}.jpg")
-        cv2.imwrite(path, frame)
+        # save local evidence image
+        local_path = os.path.join(self.evidence_dir, f"{vtype}_{ts}.jpg")
+      
+
+        # prepare Cloudinary path
+        safe_email = state.Email_id.replace("@", "%40")  # convert email for safe path
+        cloud_path = f"{state.Assessment_id}/{safe_email}/{vtype}_{ts}"
+
+        # upload to Cloudinary
+        try:
+            upload_result = cloudinary.uploader.upload(local_path, public_id=cloud_path)
+            cloud_url = upload_result.get("secure_url")
+        except Exception as e:
+            print("Cloudinary upload error:", e)
+            cloud_url = None
 
         violation_data = {
             "assessment_id": state.Assessment_id,
             "email": state.Email_id,
             "time": ts,
             "type": vtype,
-            "evidence_path": path,
+            "evidence_path": local_path,
+            "cloud_url": cloud_url,
             "timestamp": time.time()
         }
 
