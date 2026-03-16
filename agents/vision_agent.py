@@ -18,7 +18,6 @@ class VisionAgent:
         self.multi_person_start = None
         self.multi_person_threshold = 2
 
-
     def analyze_vision(self, frame, camera_type="laptop"):
 
         results = self.model(frame, verbose=False)
@@ -49,33 +48,24 @@ class VisionAgent:
         multi_flag = False
 
         if people > 1:
-
             if self.multi_person_start is None:
                 self.multi_person_start = time.time()
-
             elif time.time() - self.multi_person_start > self.multi_person_threshold:
                 multi_flag = True
                 self.multi_person_start = None
-
         else:
             self.multi_person_start = None
-
 
         # ------------------------------
         # Face detection (Laptop only)
         # ------------------------------
-
         face_visible = True
 
         if camera_type == "laptop":
-
-            face_results = self.face_detector.process(frame)
+            # FIX: MediaPipe requires RGB, OpenCV gives BGR — convert first
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            face_results = self.face_detector.process(rgb_frame)
             face_visible = bool(face_results.detections)
-
-        else:
-            # Mobile camera may see side of face or body
-            face_visible = True
-
 
         return {
             "camera": camera_type,

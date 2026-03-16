@@ -10,7 +10,8 @@ Shared runtime state between:
 latest_frame = None
 risk_agent = None
 violation_agent = None
-
+latest_frame = None
+latest_frame_time = 0
 proctoring_active =False
 
 Assessment_id = "Sairam"

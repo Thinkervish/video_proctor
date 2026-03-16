@@ -26,44 +26,41 @@ report_agent = ReportAgent(state.risk_agent, state.violation_agent)
 audio_agent = AudioAgent()
 spoofing_agent = SpoofingAgent()
 
-latest_frame = None  # Global for FastAPI
+latest_frame = None
 
 
 def run_proctoring():
     global latest_frame
 
     attention_scores = []
-
-    # Start Audio Listener asynchronously
     audio_agent.start()
-
     start = time.time()
+    elapsed = 0
 
     while state.proctoring_active:
 
         frame = state.latest_frame
-        if frame is None:
+        frame_age = time.time() - state.latest_frame_time  # ← inside loop, correct indent
+
+        if frame is None or frame_age > 2.0:       # ← inside loop
             time.sleep(0.03)
-            continue
+            continue                                # ← inside loop
 
-        frame = cv2.resize(frame, (640, 480))
+        frame = cv2.resize(frame, (640, 480))      # ← inside loop
 
-        # -----------------------------------------
-        # Determine camera type
-        # Developers can change this dynamically
-        # -----------------------------------------
         camera_type = getattr(state, "camera_type", "laptop")
 
         # -----------------------------------------
         # Run AI Agents
         # -----------------------------------------
-        vision_data = vision_agent.analyze_vision(frame, camera_type)
-
+        vision_data    = vision_agent.analyze_vision(frame, camera_type)
         attention_data = attention_agent.analyze(frame, camera_type)
+        audio_data     = audio_agent.analyze_audio()
+        spoof_data     = spoofing_agent.analyze_spoofing(frame, camera_type)
 
-        audio_data = audio_agent.analyze_audio()
-
-        spoof_data = spoofing_agent.analyze_spoofing(frame, camera_type)
+        print(f"[V]  face={vision_data['face_visible']} | multi={vision_data['multiple_people']} | illegal={vision_data['illegal_objects']}")
+        print(f"[A]  attention={attention_data['attention']} | drowsy={attention_data['drowsy']} | head={attention_data['head_turn']} | mouth={attention_data['mouth_open']}")
+        print(f"[AU] talking={audio_data['talking']} | noise={audio_data['loud_noise']}")
 
         # -----------------------------------------
         # Supervisor Decision Engine
@@ -78,7 +75,6 @@ def run_proctoring():
         )
 
         attention_scores.append(attention_data["attention"])
-
         elapsed = int(time.time() - start)
 
         cv2.putText(
@@ -91,21 +87,17 @@ def run_proctoring():
             2
         )
 
-        # Update global frame for server
         state.latest_frame = frame.copy()
-
-        # Optional debugging window
         cv2.imshow("Agentic Proctor", frame)
+
+        time.sleep(0.03)  # ← throttle loop to ~30fps, saves CPU
 
     # -----------------------------------------
     # Clean Shutdown
     # -----------------------------------------
     audio_agent.stop()
-
     cv2.destroyAllWindows()
 
     avg_attention = int(np.mean(attention_scores)) if attention_scores else 0
-
     report_agent.generate_reports(elapsed, avg_attention)
-
     print("PROCTORING SESSION DONE ✅ Reports Generated.")

@@ -1,17 +1,13 @@
 import time
 import os
 import cv2
+import numpy as np
 from Connections.ViolationLogsDB import violation_logs_collection
 import state
-import cloudinary.uploader
 from Connections.EvidanceImage import cloudinary
 
 class ViolationAgent:
     def __init__(self, output_dir="outputs"):
-        self.output_dir = output_dir
-        self.evidence_dir = os.path.join(self.output_dir, "evidence")
-        os.makedirs(self.evidence_dir, exist_ok=True)
-
         self.violations = []
         self.last_violation = {}
         self.cooldown = 5
@@ -23,21 +19,27 @@ class ViolationAgent:
         if vtype in self.last_violation and now - self.last_violation[vtype] < self.cooldown:
             return
 
-        self.last_violation[vtype] = now
-        ts = time.strftime("%H_%M_%S")
+        if frame is None:
+            print(f"Skipping {vtype} — frame is None")
+            return
 
-        # save local evidence image
-        local_path = os.path.join(self.evidence_dir, f"{vtype}_{ts}.jpg")
-      
+        self.last_violation[vtype] = now
+        ts = time.strftime("%H_%M_%S") + f"_{int(time.time() * 1000) % 1000:03d}"
 
         # prepare Cloudinary path
-        safe_email = state.Email_id.replace("@", "%40")  # convert email for safe path
+        safe_email = state.Email_id.replace("@", "%40")
         cloud_path = f"{state.Assessment_id}/{safe_email}/{vtype}_{ts}"
 
-        # upload to Cloudinary
+        # encode frame to buffer and upload directly to Cloudinary
         try:
-            upload_result = cloudinary.uploader.upload(local_path, public_id=cloud_path)
+            _, buffer = cv2.imencode(".jpg", frame)
+            upload_result = cloudinary.uploader.upload(
+                buffer.tobytes(),
+                public_id=cloud_path,
+                resource_type="image"
+            )
             cloud_url = upload_result.get("secure_url")
+            print(f"Uploaded to Cloudinary: {cloud_url}")
         except Exception as e:
             print("Cloudinary upload error:", e)
             cloud_url = None
@@ -47,12 +49,11 @@ class ViolationAgent:
             "email": state.Email_id,
             "time": ts,
             "type": vtype,
-            "evidence_path": local_path,
             "cloud_url": cloud_url,
             "timestamp": time.time()
         }
 
-        # store locally
+        # store locally in memory
         self.violations.append(violation_data)
 
         # store in MongoDB

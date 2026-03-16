@@ -74,6 +74,7 @@ async def receive_frame(request: Request):
 
     # store frame
     state.latest_frame = frame
+    state.latest_frame_time = time.time() 
 
     start_proctoring()  # safe to call multiple times now
 

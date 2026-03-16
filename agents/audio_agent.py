@@ -8,18 +8,16 @@ class AudioAgent:
         self.recognizer = sr.Recognizer()
         self.recognizer.energy_threshold = energy_threshold
         self.noise_threshold = noise_threshold
-        
-        self.is_talking = False
-        self.loud_noise_detected = False
-        
-        # Audio needs to run concurrently without blocking video frames
-        self.thread = threading.Thread(target=self._listen_loop, daemon=True)
+
+        self.talking_until = 0        # ← timestamp, not boolean
+        self.loud_noise_until = 0     # ← timestamp, not boolean
+
         self.running = False
+        self.thread = None
 
     def start(self):
         if self.running:
             return
-
         self.running = True
         self.thread = threading.Thread(target=self._listen_loop, daemon=True)
         self.thread.start()
@@ -32,34 +30,33 @@ class AudioAgent:
             self.recognizer.adjust_for_ambient_noise(source, duration=1)
             while self.running:
                 try:
-                    # Capture brief audio chunks (1.5 seconds)
-                    audio = self.recognizer.listen(source, timeout=1, phrase_time_limit=1.5)
-                    
-                    # 1. Noise check using raw audio data (RMS)
-                    rms = audioop.rms(audio.get_raw_data(), audio.sample_width)
+                    audio = self.recognizer.listen(
+                        source, timeout=1, phrase_time_limit=1.5
+                    )
+
+                    rms = audioop.rms(
+                        audio.get_raw_data(), audio.sample_width
+                    )
                     if rms > self.noise_threshold:
-                        self.loud_noise_detected = True
-                        time.sleep(2)  # brief cooldown
-                        self.loud_noise_detected = False
-                    
-                    # 2. Speech recognition check
-                    # We don't care about what they said, just THAT they said something
+                        # ← set expiry timestamp, no sleep needed
+                        self.loud_noise_until = time.time() + 2
+
                     text = self.recognizer.recognize_google(audio)
                     if text:
-                        self.is_talking = True
-                        time.sleep(1)
-                        self.is_talking = False
-                
+                        # ← set expiry timestamp, no sleep needed
+                        self.talking_until = time.time() + 1
+
                 except sr.WaitTimeoutError:
-                    pass  # Normal, no one was speaking
+                    pass
                 except sr.UnknownValueError:
-                    pass  # Audio was unintelligible (could just be noise)
-                except Exception as e:
-                    pass  # Ignore network drops from Google API
+                    pass
+                except Exception:
+                    pass
 
     def analyze_audio(self):
-        """Returns the current state dict for the Supervisor to read"""
+        now = time.time()
         return {
-            "talking": self.is_talking,
-            "loud_noise": self.loud_noise_detected
+            # ← True only while within the expiry window
+            "talking":     now < self.talking_until,
+            "loud_noise":  now < self.loud_noise_until,
         }
