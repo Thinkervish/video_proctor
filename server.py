@@ -1,4 +1,15 @@
+"""
+server.py  (merged — upstream improvements + Agora side cam integrated)
+─────────────────────────────────────────────────────────────────────────────
+Combines:
+  - Upstream: richer docstrings, /analytics, /report, /health endpoints,
+    JSONResponse error handling in /video/frame, code_router, type hints.
+  - Stashed: Agora side-cam (start_side_proctoring), /video/side endpoint,
+    generic _generate_frames() helper.
+"""
+
 import base64
+import json
 import os
 import time
 import threading
@@ -12,7 +23,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 import state
-from main import run_proctoring
+from main import run_proctoring, start_side_proctoring
 from api.code_routes import router as code_router
 
 
@@ -34,13 +45,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Static files & templates
 os.makedirs("outputs/evidence", exist_ok=True)
 app.mount("/evidence", StaticFiles(directory="outputs/evidence"), name="evidence")
 templates = Jinja2Templates(directory="templates")
 
-# Wire in code-analysis routes  (/code/...)
+# Wire in code-analysis routes (/code/...)
 app.include_router(code_router)
+
+# ── Ensure state fields exist before any thread touches them ─────────────────
+if not hasattr(state, "latest_frame"):          state.latest_frame          = None
+if not hasattr(state, "latest_frame_time"):     state.latest_frame_time     = 0.0
+if not hasattr(state, "side_frame"):            state.side_frame            = None
+if not hasattr(state, "side_frame_annotated"):  state.side_frame_annotated  = None
+if not hasattr(state, "side_frame_time"):       state.side_frame_time       = 0.0
+if not hasattr(state, "proctoring_active"):     state.proctoring_active     = False
+if not hasattr(state, "Assessment_id"):         state.Assessment_id         = None
+if not hasattr(state, "Email_id"):              state.Email_id              = None
 
 
 # ---------------------------------------------------------------------------
@@ -53,6 +73,8 @@ proctor_thread: threading.Thread | None = None
 def start_proctoring() -> None:
     """Start the proctoring background thread (idempotent — safe to call repeatedly)."""
     global proctor_thread
+
+    # ── Front cam thread ─────────────────────────────────────────
     if proctor_thread is None or not proctor_thread.is_alive():
         print("[Server] Starting AI Proctoring Thread...")
         proctor_thread = threading.Thread(target=run_proctoring, daemon=True)
@@ -60,15 +82,19 @@ def start_proctoring() -> None:
     else:
         print("[Server] Proctoring thread already running.")
 
+    # ── Side cam thread (Agora) ──────────────────────────────────
+    # start_side_proctoring() is idempotent — safe to call on every frame.
+    start_side_proctoring()
+
 
 # ---------------------------------------------------------------------------
 # MJPEG stream helper
 # ---------------------------------------------------------------------------
 
-def generate_frames():
-    """Yield MJPEG frames from the shared state buffer."""
+def _generate_frames(frame_source_attr: str):
+    """Generic MJPEG generator — reads from state.<frame_source_attr>."""
     while True:
-        frame = state.latest_frame
+        frame = getattr(state, frame_source_attr, None)
         if frame is None:
             time.sleep(0.03)
             continue
@@ -94,11 +120,20 @@ async def dashboard(request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request})
 
 
-@app.get("/video", summary="MJPEG webcam stream")
+@app.get("/video", summary="MJPEG front-cam stream")
 def video_feed():
-    """Stream the live annotated webcam feed as MJPEG."""
+    """Stream the live annotated front-cam feed as MJPEG."""
     return StreamingResponse(
-        generate_frames(),
+        _generate_frames("latest_frame"),
+        media_type="multipart/x-mixed-replace; boundary=frame",
+    )
+
+
+@app.get("/video/side", summary="MJPEG side-cam stream (Agora)")
+def side_video_feed():
+    """Stream the live annotated side-cam feed (from Agora) as MJPEG."""
+    return StreamingResponse(
+        _generate_frames("side_frame_annotated"),
         media_type="multipart/x-mixed-replace; boundary=frame",
     )
 
@@ -151,9 +186,12 @@ async def receive_frame(request: Request):
     Accept a frame sent from the browser (base64 JPEG), decode it,
     store it in shared state, and start the proctoring thread if needed.
 
+    Side-cam frames arrive directly via the Agora SDK callback
+    (agora_receiver.py → state.side_frame).
+
     Request body (JSON):
         {
-          "image":         str,   // base64 data URL  e.g. "data:image/jpeg;base64,..."
+          "image":         str,   // base64 data URL e.g. "data:image/jpeg;base64,..."
           "assessment_id": str,
           "email_id":      str,
         }
@@ -162,7 +200,7 @@ async def receive_frame(request: Request):
 
     data = await request.json()
 
-    image_b64      = data.get("image", "")
+    image_b64           = data.get("image", "")
     state.Assessment_id = data.get("assessment_id", "")
     state.Email_id      = data.get("email_id", "")
 
@@ -188,7 +226,7 @@ async def receive_frame(request: Request):
             status_code=400,
         )
 
-    start_proctoring()
+    start_proctoring()  # idempotent — safe to call on every frame
 
     return {
         "status":        "frame received",
@@ -200,7 +238,7 @@ async def receive_frame(request: Request):
 @app.post("/stop", summary="Stop the current proctoring session")
 def stop_proctoring():
     """
-    Signal the proctoring loop to stop.
+    Signal both proctoring loops (front cam + Agora side cam) to stop.
     The report_agent will generate the final PDF + JSON on shutdown.
     """
     state.proctoring_active = False
@@ -219,7 +257,6 @@ def get_report():
             {"status": "no_report", "detail": "No report generated yet."},
             status_code=404,
         )
-    import json
     with open(report_path, "r") as f:
         data = json.load(f)
     return JSONResponse(data)
