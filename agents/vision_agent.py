@@ -1,38 +1,48 @@
 import time
-from ultralytics import YOLO
-import mediapipe as mp
 import cv2
+import mediapipe as mp
+from ultralytics import YOLO
 
 
 class VisionAgent:
 
-    def __init__(self, model_path="models/yolov8s.pt"):
-
+    def __init__(self, model_path: str = "models/yolov8s.pt"):
         self.illegal_objects = ["cell phone", "book", "laptop"]
 
+        # YOLOv8 for object + person detection
         self.model = YOLO(model_path)
 
+        # MediaPipe frontal face detection
         mp_face = mp.solutions.face_detection
         self.face_detector = mp_face.FaceDetection(min_detection_confidence=0.5)
 
-        # FIX: separate timers per camera so front and side cam
-        # don't corrupt each other's multi-person countdown
-        self.multi_person_start = {
-            "laptop": None,
-            "mobile": None,
-        }
-        self.multi_person_threshold = 2
+        # Multi-person sustained timer
+        self.multi_person_start     = None
+        self.multi_person_threshold = 2   # seconds before flagging
 
-    def analyze_vision(self, frame, camera_type="laptop"):
+    # ─────────────────────────────────────────────────────────────
+    # Public API
+    # ─────────────────────────────────────────────────────────────
 
+    def analyze_vision(self, frame) -> dict:
+        """
+        Run object detection and face presence check on one BGR frame.
+
+        Returns:
+            {
+              "illegal_objects": list[str],   # detected prohibited item names
+              "multiple_people": bool,         # >1 person sustained >2 s
+              "people_count":    int,
+              "face_visible":    bool,
+            }
+        """
         results = self.model(frame, verbose=False)
 
-        people = 0
+        people  = 0
         illegal = []
 
         for r in results:
             for box in r.boxes:
-
                 cls   = int(box.cls)
                 label = self.model.names[cls]
                 conf  = float(box.conf)
@@ -49,45 +59,24 @@ class VisionAgent:
                 if label in self.illegal_objects and conf > 0.45:
                     illegal.append(label)
 
-        # ── Multi-person logic (per-camera timer) ────────────────
+        # ── Multi-person sustained timer ──────────────────────────
         multi_flag = False
-        timer_key  = camera_type if camera_type in self.multi_person_start else "laptop"
 
         if people > 1:
-            if self.multi_person_start[timer_key] is None:
-                self.multi_person_start[timer_key] = time.time()
-            elif time.time() - self.multi_person_start[timer_key] > self.multi_person_threshold:
+            if self.multi_person_start is None:
+                self.multi_person_start = time.time()
+            elif time.time() - self.multi_person_start > self.multi_person_threshold:
                 multi_flag = True
-                self.multi_person_start[timer_key] = None
+                self.multi_person_start = None
         else:
-            self.multi_person_start[timer_key] = None
+            self.multi_person_start = None
 
-        # ── Face detection ───────────────────────────────────────
-        # Laptop: full frontal detection
-        # Mobile: side-profile detection — same detector, lower confidence
-        #         since a profile face scores lower than a frontal face
-        face_visible = True
-
+        # ── Frontal face detection ─────────────────────────────────
         rgb_frame    = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         face_results = self.face_detector.process(rgb_frame)
-
-        if camera_type == "laptop":
-            face_visible = bool(face_results.detections)
-
-        elif camera_type == "mobile":
-            # Profile faces score lower — accept any detection above 0.3
-            # (detector was initialised at 0.5 but detections object still
-            #  carries the raw score we can check)
-            if face_results.detections:
-                best_score = max(
-                    d.score[0] for d in face_results.detections
-                )
-                face_visible = best_score >= 0.3
-            else:
-                face_visible = False
+        face_visible = bool(face_results.detections)
 
         return {
-            "camera":          camera_type,
             "illegal_objects": illegal,
             "multiple_people": multi_flag,
             "people_count":    people,

@@ -1,50 +1,72 @@
-import speech_recognition as sr
 import audioop
-import time
 import threading
+import time
+
+import speech_recognition as sr
+
 
 class AudioAgent:
-    def __init__(self, energy_threshold=3000, noise_threshold=15000):
+
+    def __init__(
+        self,
+        energy_threshold: int = 3000,
+        noise_threshold:  int = 15000,
+    ):
         self.recognizer = sr.Recognizer()
         self.recognizer.energy_threshold = energy_threshold
         self.noise_threshold = noise_threshold
 
-        self.talking_until = 0        # ← timestamp, not boolean
-        self.loud_noise_until = 0     # ← timestamp, not boolean
+        # Expiry timestamps — flag is "active" while time.time() < timestamp
+        self.talking_until    = 0.0
+        self.loud_noise_until = 0.0
 
         self.running = False
-        self.thread = None
+        self.thread: threading.Thread | None = None
 
-    def start(self):
+    # ─────────────────────────────────────────────────────────────
+    # Lifecycle
+    # ─────────────────────────────────────────────────────────────
+
+    def start(self) -> None:
+        """Start the background listening thread (idempotent)."""
         if self.running:
             return
         self.running = True
-        self.thread = threading.Thread(target=self._listen_loop, daemon=True)
+        self.thread = threading.Thread(
+            target=self._listen_loop, daemon=True
+        )
         self.thread.start()
 
-    def stop(self):
+    def stop(self) -> None:
+        """Signal the listening thread to exit."""
         self.running = False
 
-    def _listen_loop(self):
+    # ─────────────────────────────────────────────────────────────
+    # Background thread
+    # ─────────────────────────────────────────────────────────────
+
+    def _listen_loop(self) -> None:
         with sr.Microphone() as source:
             self.recognizer.adjust_for_ambient_noise(source, duration=1)
             while self.running:
                 try:
                     audio = self.recognizer.listen(
-                        source, timeout=1, phrase_time_limit=1.5
+                        source,
+                        timeout=1,
+                        phrase_time_limit=1.5,
                     )
 
+                    # RMS energy check — loud noise detection
                     rms = audioop.rms(
                         audio.get_raw_data(), audio.sample_width
                     )
                     if rms > self.noise_threshold:
-                        # ← set expiry timestamp, no sleep needed
-                        self.loud_noise_until = time.time() + 2
+                        self.loud_noise_until = time.time() + 2.0
 
+                    # Speech recognition — talking detection
                     text = self.recognizer.recognize_google(audio)
                     if text:
-                        # ← set expiry timestamp, no sleep needed
-                        self.talking_until = time.time() + 1
+                        self.talking_until = time.time() + 1.0
 
                 except sr.WaitTimeoutError:
                     pass
@@ -53,10 +75,22 @@ class AudioAgent:
                 except Exception:
                     pass
 
-    def analyze_audio(self):
+    # ─────────────────────────────────────────────────────────────
+    # Public API — called every frame by SupervisorAgent
+    # ─────────────────────────────────────────────────────────────
+
+    def analyze_audio(self) -> dict:
+        """
+        Return current audio flags.
+
+        Returns:
+            {
+              "talking":    bool,   # True while within talking expiry window
+              "loud_noise": bool,   # True while within noise expiry window
+            }
+        """
         now = time.time()
         return {
-            # ← True only while within the expiry window
-            "talking":     now < self.talking_until,
-            "loud_noise":  now < self.loud_noise_until,
+            "talking":    now < self.talking_until,
+            "loud_noise": now < self.loud_noise_until,
         }
