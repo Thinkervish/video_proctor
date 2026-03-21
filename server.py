@@ -1,11 +1,8 @@
 """
-server.py  (merged — upstream improvements + Agora side cam integrated)
+server.py
 ─────────────────────────────────────────────────────────────────────────────
-Combines:
-  - Upstream: richer docstrings, /analytics, /report, /health endpoints,
-    JSONResponse error handling in /video/frame, code_router, type hints.
-  - Stashed: Agora side-cam (start_side_proctoring), /video/side endpoint,
-    generic _generate_frames() helper.
+FastAPI server combining video proctoring and code analysis.
+MongoDB, test case analysis, time complexity, and side camera removed.
 """
 
 import base64
@@ -23,8 +20,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 import state
-from main import run_proctoring, start_side_proctoring
+from main import run_proctoring
 from api.code_routes import router as code_router
+from coding_agents.code_supervisor_agent import CodeSupervisorAgent
 
 
 # ---------------------------------------------------------------------------
@@ -49,18 +47,17 @@ os.makedirs("outputs/evidence", exist_ok=True)
 app.mount("/evidence", StaticFiles(directory="outputs/evidence"), name="evidence")
 templates = Jinja2Templates(directory="templates")
 
-# Wire in code-analysis routes (/code/...)
 app.include_router(code_router)
 
-# ── Ensure state fields exist before any thread touches them ─────────────────
-if not hasattr(state, "latest_frame"):          state.latest_frame          = None
-if not hasattr(state, "latest_frame_time"):     state.latest_frame_time     = 0.0
-if not hasattr(state, "side_frame"):            state.side_frame            = None
-if not hasattr(state, "side_frame_annotated"):  state.side_frame_annotated  = None
-if not hasattr(state, "side_frame_time"):       state.side_frame_time       = 0.0
-if not hasattr(state, "proctoring_active"):     state.proctoring_active     = False
-if not hasattr(state, "Assessment_id"):         state.Assessment_id         = None
-if not hasattr(state, "Email_id"):              state.Email_id              = None
+# Shared supervisor instance for /Code/Checker
+_supervisor = CodeSupervisorAgent()
+
+# ── Ensure state fields exist ────────────────────────────────────────────────
+if not hasattr(state, "latest_frame"):       state.latest_frame       = None
+if not hasattr(state, "latest_frame_time"):  state.latest_frame_time  = 0.0
+if not hasattr(state, "proctoring_active"):  state.proctoring_active  = False
+if not hasattr(state, "Assessment_id"):      state.Assessment_id      = None
+if not hasattr(state, "Email_id"):           state.Email_id           = None
 
 
 # ---------------------------------------------------------------------------
@@ -71,10 +68,7 @@ proctor_thread: threading.Thread | None = None
 
 
 def start_proctoring() -> None:
-    """Start the proctoring background thread (idempotent — safe to call repeatedly)."""
     global proctor_thread
-
-    # ── Front cam thread ─────────────────────────────────────────
     if proctor_thread is None or not proctor_thread.is_alive():
         print("[Server] Starting AI Proctoring Thread...")
         proctor_thread = threading.Thread(target=run_proctoring, daemon=True)
@@ -82,19 +76,15 @@ def start_proctoring() -> None:
     else:
         print("[Server] Proctoring thread already running.")
 
-    # ── Side cam thread (Agora) ──────────────────────────────────
-    # start_side_proctoring() is idempotent — safe to call on every frame.
-    start_side_proctoring()
-
 
 # ---------------------------------------------------------------------------
 # MJPEG stream helper
 # ---------------------------------------------------------------------------
 
-def _generate_frames(frame_source_attr: str):
-    """Generic MJPEG generator — reads from state.<frame_source_attr>."""
+def _generate_frames():
+    """MJPEG generator — reads front-cam frames from state."""
     while True:
-        frame = getattr(state, frame_source_attr, None)
+        frame = state.latest_frame
         if frame is None:
             time.sleep(0.03)
             continue
@@ -111,50 +101,24 @@ def _generate_frames(frame_source_attr: str):
 
 
 # ---------------------------------------------------------------------------
-# ── PROCTORING ROUTES ────────────────────────────────────────────────────────
+# ROUTES
 # ---------------------------------------------------------------------------
 
-@app.get("/", response_class=None, summary="Live dashboard")
+@app.get("/", summary="Live dashboard")
 async def dashboard(request: Request):
-    """Serve the live monitoring dashboard."""
     return templates.TemplateResponse("dashboard.html", {"request": request})
 
 
 @app.get("/video", summary="MJPEG front-cam stream")
 def video_feed():
-    """Stream the live annotated front-cam feed as MJPEG."""
     return StreamingResponse(
-        _generate_frames("latest_frame"),
-        media_type="multipart/x-mixed-replace; boundary=frame",
-    )
-
-
-@app.get("/video/side", summary="MJPEG side-cam stream (Agora)")
-def side_video_feed():
-    """Stream the live annotated side-cam feed (from Agora) as MJPEG."""
-    return StreamingResponse(
-        _generate_frames("side_frame_annotated"),
+        _generate_frames(),
         media_type="multipart/x-mixed-replace; boundary=frame",
     )
 
 
 @app.get("/analytics", summary="Live analytics snapshot")
 def get_analytics():
-    """
-    Return a JSON snapshot of the current proctoring session state.
-
-    Response:
-        {
-          "suspicion_score": int,
-          "risk_level":      str,   // LOW / MEDIUM / HIGH
-          "violation_count": int,
-          "violations":      list,
-          "timeline":        list,
-          "proctoring_active": bool,
-          "assessment_id":   str | null,
-          "email_id":        str | null,
-        }
-    """
     suspicion_score = 0
     risk_level      = "LOW"
     timeline        = []
@@ -182,20 +146,6 @@ def get_analytics():
 
 @app.post("/video/frame", summary="Receive a base64-encoded frame from browser")
 async def receive_frame(request: Request):
-    """
-    Accept a frame sent from the browser (base64 JPEG), decode it,
-    store it in shared state, and start the proctoring thread if needed.
-
-    Side-cam frames arrive directly via the Agora SDK callback
-    (agora_receiver.py → state.side_frame).
-
-    Request body (JSON):
-        {
-          "image":         str,   // base64 data URL e.g. "data:image/jpeg;base64,..."
-          "assessment_id": str,
-          "email_id":      str,
-        }
-    """
     state.proctoring_active = True
 
     data = await request.json()
@@ -204,7 +154,6 @@ async def receive_frame(request: Request):
     state.Assessment_id = data.get("assessment_id", "")
     state.Email_id      = data.get("email_id", "")
 
-    # Decode base64 → OpenCV frame
     try:
         header, encoded = image_b64.split(",", 1)
         img_bytes = base64.b64decode(encoded)
@@ -226,7 +175,7 @@ async def receive_frame(request: Request):
             status_code=400,
         )
 
-    start_proctoring()  # idempotent — safe to call on every frame
+    start_proctoring()
 
     return {
         "status":        "frame received",
@@ -237,20 +186,12 @@ async def receive_frame(request: Request):
 
 @app.post("/stop", summary="Stop the current proctoring session")
 def stop_proctoring():
-    """
-    Signal both proctoring loops (front cam + Agora side cam) to stop.
-    The report_agent will generate the final PDF + JSON on shutdown.
-    """
     state.proctoring_active = False
     return {"status": "proctoring stopped"}
 
 
 @app.get("/report", summary="Download the latest exam report (JSON)")
 def get_report():
-    """
-    Return the latest analytics.json report if it exists.
-    Useful for the admin dashboard after an exam ends.
-    """
     report_path = "outputs/analytics.json"
     if not os.path.exists(report_path):
         return JSONResponse(
@@ -264,9 +205,56 @@ def get_report():
 
 @app.get("/health", summary="Health check")
 def health_check():
-    """Quick liveness check — returns 200 if server is up."""
     return {
         "status":            "ok",
         "proctoring_active": getattr(state, "proctoring_active", False),
         "has_frame":         state.latest_frame is not None,
     }
+
+
+@app.post("/Code/Checker", summary="Analyse a single code submission")
+async def code_checker(request: Request):
+    """
+    Accepts a single code submission from the exam UI.
+    Runs AI detection, plagiarism check, and static quality analysis.
+    Returns a full risk report.
+
+    Request body (JSON):
+        {
+          "code":          str,
+          "candidate_id":  str,
+          "question_id":   str,
+          "assessment_id": str,
+          "email":         str,
+        }
+    """
+    data = await request.json()
+
+    code          = data.get("code", "")
+    candidate_id  = data.get("candidate_id", data.get("email", "unknown"))
+    question_id   = data.get("question_id", "")
+    assessment_id = data.get("assessment_id", "")
+
+    if not code or not code.strip():
+        return JSONResponse({"error": "No code provided"}, status_code=400)
+
+    submissions = [{"candidate_id": candidate_id, "code": code}]
+
+    try:
+        report = _supervisor.analyze(submissions=submissions)
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+    candidate_report = report["candidate_reports"][0] if report["candidate_reports"] else {}
+
+    return JSONResponse({
+        "candidate_id":     candidate_id,
+        "question_id":      question_id,
+        "assessment_id":    assessment_id,
+        "ai_detection":     candidate_report.get("ai_detection", {}),
+        "quality":          candidate_report.get("quality", {}),
+        "plagiarism_score": candidate_report.get("plagiarism_score", 0.0),
+        "is_plagiarised":   candidate_report.get("is_plagiarised", False),
+        "final":            candidate_report.get("final", {}),
+        "risk_flags":       candidate_report.get("risk_flags", []),
+    })
