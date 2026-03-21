@@ -2,7 +2,7 @@
 server.py
 ─────────────────────────────────────────────────────────────────────────────
 FastAPI server combining video proctoring and code analysis.
-MongoDB, test case analysis, time complexity, and side camera removed.
+Side camera removed. One endpoint for code analysis via supervisor.
 """
 
 import base64
@@ -21,7 +21,6 @@ from fastapi.templating import Jinja2Templates
 
 import state
 from main import run_proctoring
-from api.code_routes import router as code_router
 from coding_agents.code_supervisor_agent import CodeSupervisorAgent
 
 
@@ -47,9 +46,7 @@ os.makedirs("outputs/evidence", exist_ok=True)
 app.mount("/evidence", StaticFiles(directory="outputs/evidence"), name="evidence")
 templates = Jinja2Templates(directory="templates")
 
-app.include_router(code_router)
-
-# Shared supervisor instance for /Code/Checker
+# Supervisor instance for code analysis
 _supervisor = CodeSupervisorAgent()
 
 # ── Ensure state fields exist ────────────────────────────────────────────────
@@ -101,7 +98,7 @@ def _generate_frames():
 
 
 # ---------------------------------------------------------------------------
-# ROUTES
+# VIDEO PROCTOR ROUTES
 # ---------------------------------------------------------------------------
 
 @app.get("/", summary="Live dashboard")
@@ -212,12 +209,14 @@ def health_check():
     }
 
 
-@app.post("/Code/Checker", summary="Analyse a single code submission")
+# ---------------------------------------------------------------------------
+# CODE ANALYSIS ROUTE  (single endpoint via supervisor)
+# ---------------------------------------------------------------------------
+
+@app.post("/Code/Checker", summary="Analyse candidate code for anomalies")
 async def code_checker(request: Request):
     """
-    Accepts a single code submission from the exam UI.
-    Runs AI detection, plagiarism check, and static quality analysis.
-    Returns a full risk report.
+    Candidate types code → supervisor runs all agents → returns anomaly report.
 
     Request body (JSON):
         {
