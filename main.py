@@ -1,13 +1,13 @@
 """
-main.py  (updated — dual cam: front cam + Agora side cam)
+main.py  (updated — front cam)
 ─────────────────────────────────────────────────────────────────────────────
-Two proctoring loops run concurrently in separate threads:
+proctoring loops run concurrently in separate threads:
 
   run_proctoring()        — front cam  (state.latest_frame)
-  run_side_proctoring()   — side cam   (state.side_frame via Agora)
+  
 
-Both share the same RiskAgent, ViolationAgent, SupervisorAgent.
-Side cam uses SideAttentionAgent (tuned for 90° profile view).
+
+.
 Audio is only processed in the front-cam loop to avoid double-counting.
 """
 
@@ -18,13 +18,16 @@ import numpy as np
 
 import state
 from agents.vision_agent     import VisionAgent
-from agents.attention_agent  import AttentionAgent   # handles both cams
+from agents.attention_agent  import AttentionAgent   
 from agents.violation_agent  import ViolationAgent
 from agents.supervisor_agent import SupervisorAgent
 from agents.report_agent     import ReportAgent
 from agents.risk_agent       import RiskAgent
 from agents.audio_agent      import AudioAgent
 from agents.spoofing_agent   import SpoofingAgent
+from code_agents.plagiarism_agent import PlagiarismAgent
+from code_agents.ai_detection_agent import AIDetectionAgent
+from code_agents.code_supervisor_agent import CodeSupervisorAgent
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -40,10 +43,7 @@ report_agent          = ReportAgent(state.risk_agent, state.violation_agent)
 audio_agent           = AudioAgent()
 spoofing_agent        = SpoofingAgent()
 
-# Separate VisionAgent instance for side cam
-# (YOLO is not thread-safe with a single instance)
-side_vision_agent   = VisionAgent()
-side_spoofing_agent = SpoofingAgent()
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -64,7 +64,7 @@ def run_proctoring():
             continue
 
         frame       = cv2.resize(frame, (640, 480))
-        camera_type = getattr(state, "camera_type", "laptop")
+        camera_type = getattr(state, "laptop")
 
         # ── Run AI agents ────────────────────────────────────────
         vision_data    = vision_agent.analyze_vision(frame, camera_type)
@@ -111,92 +111,19 @@ def run_proctoring():
     print("FRONT CAM PROCTORING DONE ✅")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Side-cam proctoring loop  (reads from state.side_frame populated by Agora)
-# ─────────────────────────────────────────────────────────────────────────────
-def run_side_proctoring():
-    """
-    Runs in its own thread.
-    Reads frames delivered by agora_receiver.py into state.side_frame.
-    Uses SideAttentionAgent (pitch-aware, profile-tuned) instead of
-    the standard AttentionAgent.
-    Audio checks are skipped here — handled by run_proctoring() only.
-    """
-    print("[SIDE CAM] Proctoring loop started — waiting for Agora frames...")
 
-    # Wait until the first side-cam frame arrives (up to 30 s)
-    wait_start = time.time()
-    while getattr(state, "side_frame", None) is None:
-        if time.time() - wait_start > 30:
-            print("[SIDE CAM] ⚠️  No Agora frame received in 30 s. Loop exiting.")
-            return
-        time.sleep(0.2)
+if __name__ == "__main__":
+    plagiarism_agent = PlagiarismAgent()
+    ai_agent = AIDetectionAgent()
 
-    print("[SIDE CAM] ✅ First frame received — analysis running.")
+    supervisor = CodeSupervisorAgent(plagiarism_agent, ai_agent)
 
-    while state.proctoring_active:
-        side_frame     = getattr(state, "side_frame", None)
-        side_frame_age = time.time() - getattr(state, "side_frame_time", 0)
+    while True:
+        code = input("Enter code (or 'exit'): ")
 
-        if side_frame is None or side_frame_age > 3.0:
-            # Stale / no frame — log as face not visible after 3 s gap
-            if side_frame_age > 3.0 and side_frame is not None:
-                print("[SIDE CAM] ⚠️  Frame stale — side cam may be disconnected.")
-            time.sleep(0.05)
-            continue
+        if code.lower() == "exit":
+            break
 
-        frame = cv2.resize(side_frame, (640, 480))
+        language = input("Enter language (python/java/cpp): ")
 
-        # ── Run AI agents (side cam) ─────────────────────────────
-        vision_data    = side_vision_agent.analyze_vision(frame, camera_type="mobile")
-        attention_data = attention_agent.analyze(frame, camera_type="mobile")  # "mobile" branch
-        spoof_data     = side_spoofing_agent.analyze_spoofing(frame, camera_type="mobile")
-
-        # No audio — side cam shares the same audio environment;
-        # audio is already processed in run_proctoring()
-        audio_data = {"talking": False, "loud_noise": False}
-
-        print(
-            f"[SIDE] face={vision_data['face_visible']} | "
-            f"multi={vision_data['multiple_people']} | "
-            f"illegal={vision_data['illegal_objects']}"
-        )
-        print(
-            f"[SIDE] attention={attention_data['attention']} | "
-            f"drowsy={attention_data['drowsy']} | "
-            f"head_turn={attention_data['head_turn']} | "
-            f"looking_down={attention_data.get('looking_down', False)} | "
-            f"mouth={attention_data['mouth_open']}"
-        )
-
-        # ── Supervisor decision engine ───────────────────────────
-        supervisor_agent.supervise(
-            vision_data, attention_data, audio_data,
-            frame, camera_type="mobile",              # ← marks this as side cam
-            spoof_data=spoof_data,
-        )
-
-        # Optional: show side cam debug window
-        cv2.putText(
-            frame,
-            f"[SIDE] Suspicion:{state.risk_agent.suspicion_score}",
-            (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 100, 0), 2,
-        )
-        state.side_frame_annotated = frame.copy()
-
-        time.sleep(0.03)   # ~30 fps
-
-    print("[SIDE CAM] Proctoring loop stopped.")
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Convenience: start both loops together
-# ─────────────────────────────────────────────────────────────────────────────
-_side_thread = None
-
-def start_side_proctoring():
-    global _side_thread
-    if _side_thread and _side_thread.is_alive():
-        return
-    _side_thread = threading.Thread(target=run_side_proctoring, daemon=True)
-    _side_thread.start()
+        supervisor.analyze(code, language)
