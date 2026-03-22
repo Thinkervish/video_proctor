@@ -77,7 +77,7 @@ def start_proctoring() -> None:
         proctor_thread = threading.Thread(target=run_proctoring, daemon=True)
         proctor_thread.start()
     else:
-        print("[Server] Proctoring thread already running.")
+        pass
 
 
 # ---------------------------------------------------------------------------

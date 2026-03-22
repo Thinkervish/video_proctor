@@ -104,7 +104,7 @@ def run_proctoring():
             )
 
             state.latest_frame = frame.copy()
-            cv2.imshow("Agentic Proctor — Front Cam", frame)
+            pass
 
         except Exception as e:
             print("Proctoring error:", e)
