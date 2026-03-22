@@ -3,6 +3,7 @@ from code_agents.code_utils import (
     get_python_ast,
     normalize_python_ast,
     get_java_ast,
+    normalize_java_ast,
     get_cpp_ast
 )
 
@@ -45,7 +46,8 @@ class PlagiarismAgent:
             return str(normalized)
 
         elif language == "java":
-            return get_java_ast(code)
+            ast_repr = get_java_ast(code)
+            return normalize_java_ast(ast_repr)
 
         elif language in ["cpp", "c++"]:
             return get_cpp_ast(code)
