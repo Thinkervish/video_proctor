@@ -21,7 +21,7 @@ from fastapi.templating import Jinja2Templates
 
 import state
 from main import run_proctoring
-from coding_agents.code_supervisor_agent import CodeSupervisorAgent
+from code_agents.code_supervisor_agent import CodeSupervisorAgent
 
 
 # ---------------------------------------------------------------------------
@@ -215,45 +215,12 @@ def health_check():
 
 @app.post("/Code/Checker", summary="Analyse candidate code for anomalies")
 async def code_checker(request: Request):
-    """
-    Candidate types code → supervisor runs all agents → returns anomaly report.
+    
+    data = await request.json() 
 
-    Request body (JSON):
-        {
-          "code":          str,
-          "candidate_id":  str,
-          "question_id":   str,
-          "assessment_id": str,
-          "email":         str,
-        }
-    """
-    data = await request.json()
-
-    code          = data.get("code", "")
-    candidate_id  = data.get("candidate_id", data.get("email", "unknown"))
-    question_id   = data.get("question_id", "")
-    assessment_id = data.get("assessment_id", "")
-
-    if not code or not code.strip():
-        return JSONResponse({"error": "No code provided"}, status_code=400)
-
-    submissions = [{"candidate_id": candidate_id, "code": code}]
-
-    try:
-        report = _supervisor.analyze(submissions=submissions)
-    except Exception as exc:
-        return JSONResponse({"error": str(exc)}, status_code=500)
-
-    candidate_report = report["candidate_reports"][0] if report["candidate_reports"] else {}
-
-    return JSONResponse({
-        "candidate_id":     candidate_id,
-        "question_id":      question_id,
-        "assessment_id":    assessment_id,
-        "ai_detection":     candidate_report.get("ai_detection", {}),
-        "quality":          candidate_report.get("quality", {}),
-        "plagiarism_score": candidate_report.get("plagiarism_score", 0.0),
-        "is_plagiarised":   candidate_report.get("is_plagiarised", False),
-        "final":            candidate_report.get("final", {}),
-        "risk_flags":       candidate_report.get("risk_flags", []),
-    })
+    code         = data.get("code")
+    language = data.get("language")
+    question_id   = data.get("question_id")
+    assessment_id = data.get("assessment_id")
+    result = CodeSupervisorAgent.analyze(code , language)
+    print(result)
