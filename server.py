@@ -22,6 +22,8 @@ from fastapi.templating import Jinja2Templates
 import state
 from main import run_proctoring
 from code_agents.code_supervisor_agent import CodeSupervisorAgent
+from code_agents.plagiarism_agent import PlagiarismAgent
+from code_agents.ai_detection_agent import AIDetectionAgent
 
 
 # ---------------------------------------------------------------------------
@@ -46,8 +48,12 @@ os.makedirs("outputs/evidence", exist_ok=True)
 app.mount("/evidence", StaticFiles(directory="outputs/evidence"), name="evidence")
 templates = Jinja2Templates(directory="templates")
 
+plagiarism_agent = PlagiarismAgent()
+ai_agent = AIDetectionAgent()
+
+_supervisor = CodeSupervisorAgent(plagiarism_agent, ai_agent)
 # Supervisor instance for code analysis
-_supervisor = CodeSupervisorAgent()
+
 
 # ── Ensure state fields exist ────────────────────────────────────────────────
 if not hasattr(state, "latest_frame"):       state.latest_frame       = None
@@ -213,6 +219,22 @@ def health_check():
 # CODE ANALYSIS ROUTE  (single endpoint via supervisor)
 # ---------------------------------------------------------------------------
 
+if __name__ == "__main__":
+    plagiarism_agent = PlagiarismAgent()
+    ai_agent         = AIDetectionAgent()
+
+    supervisor = CodeSupervisorAgent(plagiarism_agent, ai_agent)
+
+    while True:
+        code = input("Enter code (or 'exit'): ")
+
+        if code.lower() == "exit":
+            break
+
+        language = input("Enter language (python/java/cpp): ")
+
+        supervisor.analyze(code, language)
+
 @app.post("/Code/Checker", summary="Analyse candidate code for anomalies")
 async def code_checker(request: Request):
     
@@ -222,5 +244,5 @@ async def code_checker(request: Request):
     language = data.get("language")
     question_id   = data.get("question_id")
     assessment_id = data.get("assessment_id")
-    result = CodeSupervisorAgent.analyze(code , language)
+    result = _supervisor.analyze(code , language)
     print(result)
