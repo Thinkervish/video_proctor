@@ -114,7 +114,10 @@ def run_proctoring():
 
     # ── Clean shutdown ───────────────────────────────
     audio_agent.stop()
-    cv2.destroyAllWindows()
+    try:
+        cv2.destroyAllWindows()
+    except:
+        pass
 
     avg_attention = int(np.mean(attention_scores)) if attention_scores else 0
     report_agent.generate_reports(elapsed, avg_attention)
