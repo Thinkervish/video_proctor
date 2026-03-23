@@ -46,34 +46,40 @@ class AudioAgent:
     # ─────────────────────────────────────────────────────────────
 
     def _listen_loop(self) -> None:
-        with sr.Microphone() as source:
-            self.recognizer.adjust_for_ambient_noise(source, duration=1)
-            while self.running:
-                try:
-                    audio = self.recognizer.listen(
-                        source,
-                        timeout=1,
-                        phrase_time_limit=1.5,
-                    )
+        try:
+            with sr.Microphone() as source:
+                self.recognizer.adjust_for_ambient_noise(source, duration=1)
+                while self.running:
+                    try:
+                        audio = self.recognizer.listen(
+                            source,
+                            timeout=1,
+                            phrase_time_limit=1.5,
+                        )
 
-                    # RMS energy check — loud noise detection
-                    rms = audioop.rms(
-                        audio.get_raw_data(), audio.sample_width
-                    )
-                    if rms > self.noise_threshold:
-                        self.loud_noise_until = time.time() + 2.0
+                        # RMS energy check — loud noise detection
+                        rms = audioop.rms(
+                            audio.get_raw_data(), audio.sample_width
+                        )
+                        if rms > self.noise_threshold:
+                            self.loud_noise_until = time.time() + 2.0
 
-                    # Speech recognition — talking detection
-                    text = self.recognizer.recognize_google(audio)
-                    if text:
-                        self.talking_until = time.time() + 1.0
+                        # Speech recognition — talking detection
+                        text = self.recognizer.recognize_google(audio)
+                        if text:
+                            self.talking_until = time.time() + 1.0
 
-                except sr.WaitTimeoutError:
-                    pass
-                except sr.UnknownValueError:
-                    pass
-                except Exception:
-                    pass
+                    except sr.WaitTimeoutError:
+                        pass
+                    except sr.UnknownValueError:
+                        pass
+                    except Exception:
+                        pass
+        except Exception as e:
+            print(f"[AudioAgent] Error initializing microphone: {e}")
+            print("[AudioAgent] Please check if PyAudio is installed and a microphone is available.")
+            self.running = False
+
 
     # ─────────────────────────────────────────────────────────────
     # Public API — called every frame by SupervisorAgent

@@ -189,9 +189,13 @@ async def receive_frame(request: Request):
 
 @app.post("/stop", summary="Stop the current proctoring session")
 def stop_proctoring():
+    if not getattr(state, "proctoring_active", False):
+        return {"status": "proctoring already stopped"}
+    
     print("[VideoProctor] STOP signal received. Finalizing session...")
     state.proctoring_active = False
     return {"status": "proctoring stopped"}
+
 
 
 @app.get("/report", summary="Download the latest exam report (JSON)")

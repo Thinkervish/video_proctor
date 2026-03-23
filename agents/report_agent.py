@@ -32,6 +32,16 @@ class ReportAgent:
         violations      = self.violation_agent.violations
 
         # ── JSON ──────────────────────────────────────────────────
+        def json_serial(obj):
+            """JSON serializer for objects not serializable by default json code"""
+            try:
+                from bson import ObjectId
+                if isinstance(obj, ObjectId):
+                    return str(obj)
+            except ImportError:
+                pass
+            raise TypeError(f"Type {type(obj)} not serializable")
+
         analytics = {
             "duration":        round(duration, 2),
             "avg_attention":   round(avg_attention, 2),
@@ -46,7 +56,7 @@ class ReportAgent:
         }
 
         with open("outputs/analytics.json", "w") as f:
-            json.dump(analytics, f, indent=2)
+            json.dump(analytics, f, indent=2, default=json_serial)
 
         print("[Report] analytics.json saved.")
 

@@ -1,11 +1,13 @@
 {
-  "duration": 61,
-  "avg_attention": 80,
+  "duration": 68,
+  "avg_attention": 89,
   "violations": [
     {
-      "time": "19_55_50",
-      "type": "talking",
+      "assessment_id": "92e4dde4-2616-4fe5-9e63-7673c804bea1",
+      "email": "ssridharan599@gmail.com",
+      "time": "14_02_13_462",
+      "type": "low_attention",
       "detail": "",
-      "evidence_path": "outputs\\evidence\\talking_19_55_50.jpg",
-      "timestamp": 1773498350.4239335,
+      "cloud_url": "https://res.cloudinary.com/dawfv3niz/image/upload/v1774254736/92e4dde4-2616-4fe5-9e63-7673c804bea1/ssridharan599%2540gmail.com/low_attention_14_02_13_462.jpg",
+      "timestamp": 1774254733.4622092,
       "_id": 
