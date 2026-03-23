@@ -220,6 +220,20 @@ def health_check():
 # CODE ANALYSIS ROUTE  (single endpoint via supervisor)
 # ---------------------------------------------------------------------------
 
+
+@app.post("/Code/Checker", summary="Analyse candidate code for anomalies")
+async def code_checker(request: Request):
+    
+    data = await request.json() 
+
+    code         = data.get("code")
+    language = data.get("language")
+    question_id   = data.get("question_id")
+    assessment_id = data.get("assessment_id")
+    result = _supervisor.analyze(code , language)
+    print(result)
+
+
 if __name__ == "__main__":
     plagiarism_agent = PlagiarismAgent()
     ai_agent         = AIDetectionAgent()
@@ -235,15 +249,3 @@ if __name__ == "__main__":
         language = input("Enter language (python/java/cpp): ")
 
         supervisor.analyze(code, language)
-
-@app.post("/Code/Checker", summary="Analyse candidate code for anomalies")
-async def code_checker(request: Request):
-    
-    data = await request.json() 
-
-    code         = data.get("code")
-    language = data.get("language")
-    question_id   = data.get("question_id")
-    assessment_id = data.get("assessment_id")
-    result = _supervisor.analyze(code , language)
-    print(result)
