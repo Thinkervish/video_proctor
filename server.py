@@ -189,6 +189,7 @@ async def receive_frame(request: Request):
 
 @app.post("/stop", summary="Stop the current proctoring session")
 def stop_proctoring():
+    print("[VideoProctor] STOP signal received. Finalizing session...")
     state.proctoring_active = False
     return {"status": "proctoring stopped"}
 
