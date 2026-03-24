@@ -5,7 +5,7 @@ try:
     client = MongoClient(MONGO_URL)
     db = client['proctoring']
     
-    violation_logs_collection = db['violation_logs']
+    violation_logs_collection = db['violation_logs'] 
     CodeEvaluation_collection = db['Code_Detection_DB']
 
 except Exception as e:

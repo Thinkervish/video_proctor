@@ -24,7 +24,7 @@ class CodeSupervisorAgent:
         return final_result
 
     def _print_output(self, result):
-        print("\n===== CODE ANALYSIS RESULT =====")
+
         print(json.dumps(result, indent=4))
         print("================================\n")
 

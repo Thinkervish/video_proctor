@@ -24,6 +24,7 @@ from main import run_proctoring
 from code_agents.code_supervisor_agent import CodeSupervisorAgent
 from code_agents.plagiarism_agent import PlagiarismAgent
 from code_agents.ai_detection_agent import AIDetectionAgent
+from Connections.ViolationLogsDB import CodeEvaluation_collection
 
 
 # ---------------------------------------------------------------------------
@@ -220,10 +221,6 @@ def health_check():
     }
 
 
-# ---------------------------------------------------------------------------
-# CODE ANALYSIS ROUTE  (single endpoint via supervisor)
-# ---------------------------------------------------------------------------
-
 
 @app.post("/Code/Checker", summary="Analyse candidate code for anomalies")
 async def code_checker(request: Request):
@@ -231,25 +228,22 @@ async def code_checker(request: Request):
     data = await request.json() 
 
     code         = data.get("code")
+    email = data.get("email")
     language = data.get("language")
     question_id   = data.get("question_id")
     assessment_id = data.get("assessment_id")
     result = _supervisor.analyze(code , language)
     print(result)
 
+    val  = {
+        "code" : code , 
+        "language" :language,
+        "email": email,
+        "question_id" : question_id , 
+        "assessment_id" : assessment_id , 
+        "result" : result 
 
-if __name__ == "__main__":
-    plagiarism_agent = PlagiarismAgent()
-    ai_agent         = AIDetectionAgent()
+    }
+    CodeEvaluation_collection.insert_one(val)
+    
 
-    supervisor = CodeSupervisorAgent(plagiarism_agent, ai_agent)
-
-    while True:
-        code = input("Enter code (or 'exit'): ")
-
-        if code.lower() == "exit":
-            break
-
-        language = input("Enter language (python/java/cpp): ")
-
-        supervisor.analyze(code, language)
