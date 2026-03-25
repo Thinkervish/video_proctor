@@ -8,6 +8,7 @@ Side camera removed. One endpoint for code analysis via supervisor.
 import base64
 import json
 import os
+os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 import time
 import threading
 
