@@ -5,13 +5,18 @@ Maintains the running suspicion score, violation timeline, burst detection,
 trust cutoff alerts, and tab-switch 2-strike logic.
 
 Laptop / front-cam only — no side-cam events.
+
+Scoring:
+  - All violations : flat 5 pts each
+  - Max score cap  : 30  (candidate flagged at 30)
+  - Tab switch     : +50 pts (1st → final warning, 2nd → test terminated)
 """
 
 import time
 from collections import defaultdict
 
 # ─────────────────────────────────────────────────────────────────────────────
-TRUST_CUTOFF = 50   # trust below this → proctor alert
+# TRUST_CUTOFF = 50   # trust below this → proctor alert
 # ─────────────────────────────────────────────────────────────────────────────
 
 WARNING_MESSAGES = {
@@ -30,25 +35,28 @@ WARNING_MESSAGES = {
 
 class RiskAgent:
 
+    # Maximum suspicion score for video proctoring violations
+    MAX_SCORE = 30
+
     def __init__(self):
         self.suspicion_score = 0
         self.timeline        = []
 
+        # All violations carry a flat 5-point penalty
         self.weights = {
-            "illegal_object":   25,
-            "multiple_people":  30,
-            "low_attention":    15,
-            "drowsy":           10,
-            "face_not_visible": 20,
-            "head_turned":      15,
-            "talking":          25,
-            "loud_noise":       15,
-            "spoofing_attempt": 50,
-            "mouth_open":       20,
+            "illegal_object":   5,
+            "multiple_people":  5,
+            "low_attention":    5,
+            "drowsy":           5,
+            "face_not_visible": 5,
+            "head_turned":      5,
+            "talking":          5,
+            "loud_noise":       5,
+            "spoofing_attempt": 5,
+            "mouth_open":       5,
         }
 
         # repeat 1→×1.0  repeat 2→×1.5  repeat 3→×2.0  repeat 4+→×2.5
-        self.escalation_multipliers = [1.0, 1.5, 2.0, 2.5]
         self.violation_counts       = defaultdict(int)
         self.last_risk_time         = {}
         self.risk_cooldown          = 5      # seconds between same-event logs
@@ -67,7 +75,7 @@ class RiskAgent:
         self.recent_events       = []
         self.burst_bonus_applied = False
 
-        # ── Trust cutoff alert ────────────────────────────────────
+        # ── Trust cutoff alert  (alert when trust < 50% of MAX) ──
         self.alert_active        = False
         self.alert_triggered_at  = None
         self.alert_messages      = []
@@ -96,27 +104,25 @@ class RiskAgent:
         if event not in self.weights:
             return
 
-        # ── Escalating penalty ────────────────────────────────────
+        # ── Flat 5-point penalty ──────────────────────────────────
         self.violation_counts[event] += 1
-        repeat     = self.violation_counts[event]
-        mult_idx   = min(repeat - 1, len(self.escalation_multipliers) - 1)
-        multiplier = self.escalation_multipliers[mult_idx]
-        penalty    = int(self.weights[event] * multiplier)
+        repeat  = self.violation_counts[event]
+        penalty = self.weights[event]   # always 5
 
         old = self.suspicion_score
-        self.suspicion_score = min(100, self.suspicion_score + penalty)
+        self.suspicion_score = min(self.MAX_SCORE, self.suspicion_score + penalty)
 
         self.timeline.append({
-            "event":      event,
-            "score":      self.suspicion_score,
-            "time":       time.strftime("%H:%M:%S"),
-            "repeat":     repeat,
-            "penalty":    penalty,
-            "multiplier": multiplier,
+            "event":   event,
+            "score":   self.suspicion_score,
+            "time":    time.strftime("%H:%M:%S"),
+            "repeat":  repeat,
+            "penalty": penalty,
+            "flagged": self.suspicion_score >= self.MAX_SCORE,
         })
         print(
             f"[RISK] {event} ×{repeat} → "
-            f"+{penalty} (×{multiplier:.1f}) → "
+            f"+{penalty} → "
             f"suspicion: {old} → {self.suspicion_score}"
         )
 
@@ -166,15 +172,15 @@ class RiskAgent:
         self.tab_switch_count += 1
 
         if self.tab_switch_count == 1:
-            self.suspicion_score = min(100, self.suspicion_score + 50)
+            self.suspicion_score = min(self.MAX_SCORE, self.suspicion_score + 50)
             self.timeline.append({
-                "event":      "tab_switched",
-                "score":      self.suspicion_score,
-                "time":       time.strftime("%H:%M:%S"),
-                "repeat":     1,
-                "penalty":    50,
-                "multiplier": 1.0,
-                "note":       "WARNING: Next tab switch will terminate the test.",
+                "event":   "tab_switched",
+                "score":   self.suspicion_score,
+                "time":    time.strftime("%H:%M:%S"),
+                "repeat":  1,
+                "penalty": 50,
+                "flagged": True,
+                "note":    "WARNING: Next tab switch will terminate the test.",
             })
             self.active_warning = {
                 "title":   "🖥️ Tab Switch Detected",
@@ -190,15 +196,15 @@ class RiskAgent:
 
         elif self.tab_switch_count >= 2:
             self.test_terminated = True
-            self.suspicion_score = 100
+            self.suspicion_score = self.MAX_SCORE
             self.timeline.append({
-                "event":      "tab_switched",
-                "score":      100,
-                "time":       time.strftime("%H:%M:%S"),
-                "repeat":     2,
-                "penalty":    100,
-                "multiplier": 2.0,
-                "note":       "TEST TERMINATED: 2nd tab switch.",
+                "event":   "tab_switched",
+                "score":   self.MAX_SCORE,
+                "time":    time.strftime("%H:%M:%S"),
+                "repeat":  2,
+                "penalty": 50,
+                "flagged": True,
+                "note":    "TEST TERMINATED: 2nd tab switch.",
             })
             print("[TAB] 2nd switch → TEST TERMINATED ❌")
             self._check_trust_cutoff()
@@ -216,24 +222,25 @@ class RiskAgent:
         distinct = len(set(e for _, e in self.recent_events))
         if distinct >= self.burst_threshold and not self.burst_bonus_applied:
             self.burst_bonus_applied = True
-            self.suspicion_score = min(100, self.suspicion_score + 20)
+            self.suspicion_score = min(self.MAX_SCORE, self.suspicion_score + 5)
             self.timeline.append({
-                "event":      "BURST_PATTERN",
-                "score":      self.suspicion_score,
-                "time":       time.strftime("%H:%M:%S"),
-                "repeat":     1,
-                "penalty":    20,
-                "multiplier": 1.0,
+                "event":   "BURST_PATTERN",
+                "score":   self.suspicion_score,
+                "time":    time.strftime("%H:%M:%S"),
+                "repeat":  1,
+                "penalty": 5,
+                "flagged": self.suspicion_score >= self.MAX_SCORE,
             })
-            print(f"[RISK] ⚡ BURST — {distinct} violations in {self.burst_window}s → +20")
+            print(f"[RISK] ⚡ BURST — {distinct} violations in {self.burst_window}s → +5")
 
     # ─────────────────────────────────────────────────────────────
-    # Trust cutoff
+    # Trust cutoff  (threshold = 50% of MAX_SCORE = 15)
     # ─────────────────────────────────────────────────────────────
 
     def _check_trust_cutoff(self) -> None:
-        trust = self.get_trust_score()
-        if trust < TRUST_CUTOFF:
+        trust  = self.get_trust_score()
+        cutoff = self.MAX_SCORE // 2   # 15
+        if trust < cutoff:
             if not self.alert_active:
                 self.alert_active       = True
                 self.alert_triggered_at = time.strftime("%H:%M:%S")
