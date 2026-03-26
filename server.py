@@ -125,13 +125,17 @@ def video_feed():
 @app.get("/analytics", summary="Live analytics snapshot")
 def get_analytics():
     suspicion_score = 0
-    risk_level      = "LOW"
+    risk_level      = "NORMAL"
+    trust_score     = 30
+    flagged         = False
     timeline        = []
     violations      = []
 
     if state.risk_agent is not None:
         suspicion_score = state.risk_agent.suspicion_score
-        risk_level      = state.risk_agent.risk_level
+        risk_level      = state.risk_agent.get_risk_level()   # fixed: was .risk_level (no such attribute)
+        trust_score     = state.risk_agent.get_trust_score()
+        flagged         = state.risk_agent.is_flagged()
         timeline        = state.risk_agent.timeline
 
     if state.violation_agent is not None:
@@ -139,7 +143,10 @@ def get_analytics():
 
     return JSONResponse({
         "suspicion_score":   suspicion_score,
+        "max_score":         30,
+        "trust_score":       trust_score,
         "risk_level":        risk_level,
+        "flagged":           flagged,
         "violation_count":   len(violations),
         "violations":        violations,
         "timeline":          timeline,

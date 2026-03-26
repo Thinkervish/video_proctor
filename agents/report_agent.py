@@ -48,8 +48,10 @@ class ReportAgent:
             "violations":      violations,
             "violation_count": len(violations),
             "suspicion_score": suspicion_score,
+            "max_score":       self.risk_agent.MAX_SCORE,
             "trust_score":     trust_score,
             "risk":            risk_level,
+            "flagged":         self.risk_agent.is_flagged(),
             "timeline":        self.risk_agent.timeline,
             "warning_history": self.risk_agent.warning_history,
             "pattern_summary": self.risk_agent.get_pattern_summary(),
@@ -89,13 +91,16 @@ class ReportAgent:
         pdf.setFont("Helvetica-Bold", 12)
         pdf.drawString(2 * cm, h - 3.8 * cm, "Session Summary")
 
+        max_score = data.get("max_score", 30)
+        flagged   = data.get("flagged", False)
         rows = [
-            ("Exam Duration",       f"{data['duration']:.0f} seconds"),
-            ("Average Attention",   f"{data['avg_attention']:.1f} / 100"),
-            ("Suspicion Score",     f"{data['suspicion_score']} / 100"),
-            ("Trust Score",         f"{data['trust_score']} / 100"),
-            ("Risk Level",          data["risk"]),
-            ("Total Violations",    str(data["violation_count"])),
+            ("Exam Duration",    f"{data['duration']:.0f} seconds"),
+            ("Average Attention",f"{data['avg_attention']:.1f} / 100"),
+            ("Suspicion Score", f"{data['suspicion_score']} / {max_score}"),
+            ("Trust Score",     f"{data['trust_score']} / {max_score}"),
+            ("Risk Level",      data["risk"]),
+            ("Flagged",         "YES ⚠️" if flagged else "No"),
+            ("Total Violations", str(data["violation_count"])),
         ]
 
         pdf.setFont("Helvetica", 11)
