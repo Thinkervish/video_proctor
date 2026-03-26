@@ -24,6 +24,9 @@ class CodeRiskAgent:
     # Maximum suspicion score for code-analysis violations
     MAX_SCORE = 20
 
+    def get_trust_score(self) -> int:
+        return max(0, 20 - self.suspicion_score)
+
     def __init__(self):
         self.suspicion_score = 0
         self.timeline        = []
@@ -190,11 +193,12 @@ class CodeRiskAgent:
     # ─────────────────────────────────────────────────────────────
 
     def get_risk_level(self) -> str:
+        if self.suspicion_score == 0:  return "NO RISK"
         if self.suspicion_score >= 20: return "FLAGGED"
         if self.suspicion_score >= 15: return "HIGH RISK"
         if self.suspicion_score >= 10: return "MEDIUM RISK"
         if self.suspicion_score >= 5:  return "LOW RISK"
-        return "NORMAL"
+        return "NO RISK"
 
     def is_flagged(self) -> bool:
         return self.suspicion_score >= self.MAX_SCORE or self.test_terminated
@@ -207,7 +211,8 @@ class CodeRiskAgent:
 
     def _summary(self) -> dict:
         return {
-            "suspicion_score": self.suspicion_score,
+            "suspicion_score":         self.suspicion_score,
+            "code_agents_risk_score": self.suspicion_score,
             "max_score":       self.MAX_SCORE,
             "risk_level":      self.get_risk_level(),
             "flagged":         self.is_flagged(),

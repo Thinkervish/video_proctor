@@ -8,6 +8,7 @@ class CodeSupervisorAgent:
         self.plagiarism_agent = plagiarism_agent
         self.ai_agent         = ai_agent
         self.code_risk_agent  = CodeRiskAgent()
+        self.results          = []
 
     def analyze(self, code: str, language: str):
         plagiarism_result = self.plagiarism_agent.check_plagiarism(code, language)
@@ -30,10 +31,24 @@ class CodeSupervisorAgent:
             "risk":         risk_summary,
         }
 
+        self.results.append(final_result)
+        self.finalize_session()
         self._print_output(final_result)
-        self._store_output(final_result)
-
         return final_result
+
+    def finalize_session(self):
+        """Generate the final session report with all aggregated question results."""
+        summary = self.code_risk_agent._summary()
+        report = {
+            "code_agents_risk_score":  summary,
+            "code_agents_trust_score": self.code_risk_agent.get_trust_score(),
+            "question_count":          len(self.results),
+            "questions":               self.results
+        }
+        with open("code_analytics.json", "w") as f:
+            json.dump(report, f, indent=4)
+        print("[CODE SUPERVISOR] Session finalized. code_analytics.json saved.")
+        return report
 
     def update_tab_switch(self):
         """Call this when the candidate switches tabs during the code exam."""
@@ -49,7 +64,3 @@ class CodeSupervisorAgent:
         print(json.dumps(result, indent=4))
         print("================================\n")
 
-    def _store_output(self, result):
-        with open("code_analytics.json", "a") as f:
-            json.dump(result, f)
-            f.write("\n")

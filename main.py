@@ -63,23 +63,23 @@ def run_proctoring():
             audio_data     = audio_agent.analyze_audio()
             spoof_data     = spoofing_agent.analyze_spoofing(frame)
 
-            print(
-                f"[FRONT] face={vision_data['face_visible']} | "
-                f"multi={vision_data['multiple_people']} | "
-                f"illegal={vision_data['illegal_objects']}"
-            )
-
-            print(
-                f"[FRONT] attention={attention_data['attention']} | "
-                f"drowsy={attention_data['drowsy']} | "
-                f"head={attention_data['head_turn']} | "
-                f"mouth={attention_data['mouth_open']}"
-            )
-
-            print(
-                f"[AUDIO] talking={audio_data['talking']} | "
-                f"noise={audio_data['loud_noise']}"
-            )
+            # print(
+            #     f"[FRONT] face={vision_data['face_visible']} | "
+            #     f"multi={vision_data['multiple_people']} | "
+            #     f"illegal={vision_data['illegal_objects']}"
+            # )
+            # 
+            # print(
+            #     f"[FRONT] attention={attention_data['attention']} | "
+            #     f"drowsy={attention_data['drowsy']} | "
+            #     f"head={attention_data['head_turn']} | "
+            #     f"mouth={attention_data['mouth_open']}"
+            # )
+            # 
+            # print(
+            #     f"[AUDIO] talking={audio_data['talking']} | "
+            #     f"noise={audio_data['loud_noise']}"
+            # )
 
             # ── Supervisor decision engine ───────────────
             supervisor_agent.supervise(
@@ -90,9 +90,6 @@ def run_proctoring():
                 frame,
             )
 
-            attention_scores.append(attention_data["attention"])
-            elapsed = int(time.time() - start)
-
             cv2.putText(
                 frame,
                 f"Suspicion:{state.risk_agent.suspicion_score}",
@@ -102,6 +99,13 @@ def run_proctoring():
                 (0, 0, 255),
                 2,
             )
+
+            # ── Periodic Report Update (every 30 frames) ───────
+            state.frame_count = getattr(state, "frame_count", 0) + 1
+            if state.frame_count % 30 == 0:
+                avg_attention = int(np.mean(attention_scores)) if attention_scores else 0
+                report_agent.generate_reports(elapsed, avg_attention)
+                print(f"[FRONT] Periodic report updated (Frame {state.frame_count})")
 
             state.latest_frame = frame.copy()
             pass

@@ -144,7 +144,7 @@ class AIDetectionAgent:
         # Threshold lowered to 0.45 to catch short terse AI scripts
         return {
             "ai_score": ai_score,
-            "is_ai_generated": ai_score >= 0.45,
+            "is_ai_generated": ai_score >= 0.40,
             "confidence": self._confidence_label(ai_score),
             "feature_scores": {k: round(v, 3) for k, v in scores.items()},
             "human_signals_found": human_signals,

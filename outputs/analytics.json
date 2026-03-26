@@ -1,13 +1,77 @@
 {
-  "duration": 68,
-  "avg_attention": 89,
+  "duration": 0,
+  "avg_attention": 0,
   "violations": [
     {
-      "assessment_id": "92e4dde4-2616-4fe5-9e63-7673c804bea1",
-      "email": "ssridharan599@gmail.com",
-      "time": "14_02_13_462",
+      "assessment_id": "cf8388c3-3d05-48df-8b04-6f5b8f4eb769",
+      "email": "vishravi135@gmail.com",
+      "time": "20_17_08_105",
+      "type": "face_not_visible",
+      "detail": "",
+      "cloud_url": "https://res.cloudinary.com/dawfv3niz/image/upload/v1774536430/cf8388c3-3d05-48df-8b04-6f5b8f4eb769/vishravi135%2540gmail.com/face_not_visible_20_17_08_105.jpg",
+      "timestamp": 1774536428.1055465,
+      "_id": "69c546eeee9149869babbf47"
+    },
+    {
+      "assessment_id": "cf8388c3-3d05-48df-8b04-6f5b8f4eb769",
+      "email": "vishravi135@gmail.com",
+      "time": "20_17_10_599",
       "type": "low_attention",
       "detail": "",
-      "cloud_url": "https://res.cloudinary.com/dawfv3niz/image/upload/v1774254736/92e4dde4-2616-4fe5-9e63-7673c804bea1/ssridharan599%2540gmail.com/low_attention_14_02_13_462.jpg",
-      "timestamp": 1774254733.4622092,
-      "_id": 
+      "cloud_url": "https://res.cloudinary.com/dawfv3niz/image/upload/v1774536431/cf8388c3-3d05-48df-8b04-6f5b8f4eb769/vishravi135%2540gmail.com/low_attention_20_17_10_599.jpg",
+      "timestamp": 1774536430.5999515,
+      "_id": "69c546efee9149869babbf48"
+    }
+  ],
+  "violation_count": 2,
+  "suspicion_score": 5,
+  "desktop_cam_risk_score": 5,
+  "max_score": 50,
+  "trust_score": 45,
+  "risk": "NO RISK",
+  "flagged": false,
+  "timeline": [
+    {
+      "event": "face_not_visible",
+      "score": 5,
+      "time": "20:17:10",
+      "repeat": 1,
+      "penalty": 5,
+      "flagged": false
+    },
+    {
+      "event": "low_attention",
+      "score": 5,
+      "time": "20:17:11",
+      "repeat": 1,
+      "penalty": 0,
+      "flagged": false
+    }
+  ],
+  "warning_history": [
+    {
+      "title": "\ud83d\udc64 Face Not Visible",
+      "message": "Please ensure your face is clearly visible on camera. (occurrence \u00d71)",
+      "event": "face_not_visible",
+      "repeat": 1,
+      "penalty": 5,
+      "time": "20:17:10"
+    },
+    {
+      "title": "\ud83d\ude36 Low Attention",
+      "message": "Please focus on the exam screen. (occurrence \u00d71)",
+      "event": "low_attention",
+      "repeat": 1,
+      "penalty": 0,
+      "time": "20:17:11"
+    }
+  ],
+  "pattern_summary": {
+    "face_not_visible": {
+      "count": 1
+    },
+    "low_attention": {
+      "count": 1
+    }
+  }
+}

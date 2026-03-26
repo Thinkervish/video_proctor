@@ -5,3 +5,4 @@ reportlab
 numpy
 scikit-learn
 radon
+SpeechRecognition

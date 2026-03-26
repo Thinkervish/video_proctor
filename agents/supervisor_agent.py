@@ -42,13 +42,19 @@ class SupervisorAgent:
             self.risk_agent.update_risk("illegal_object")
 
         # ── Attention checks ──────────────────────────────────────
-        if attention_data["attention"] < 30:
+        if attention_data["attention"] < 15:
             self.violation_agent.log_violation("low_attention", frame)
             self.risk_agent.update_risk("low_attention")
 
+        if attention_data["attention"] < 35:  # Higher threshold for drowsy logic in attention_agent
+            # Wait, drowsy is a separate boolean from attention_agent
+            pass
+
         if attention_data["drowsy"]:
-            self.violation_agent.log_violation("drowsy", frame)
-            self.risk_agent.update_risk("drowsy")
+            # Only fire drowsy if attention is very low
+            if attention_data["attention"] < 35:
+                self.violation_agent.log_violation("drowsy", frame)
+                self.risk_agent.update_risk("drowsy")
 
         if attention_data.get("head_turn", False):
             self.violation_agent.log_violation("head_turned", frame)
