@@ -26,6 +26,7 @@ from code_agents.code_supervisor_agent import CodeSupervisorAgent
 from code_agents.plagiarism_agent import PlagiarismAgent
 from code_agents.ai_detection_agent import AIDetectionAgent
 from Connections.ViolationLogsDB import CodeEvaluation_collection
+from Connections.ViolationLogsDB import Risk_Score_DB
 
 
 # ---------------------------------------------------------------------------
@@ -275,17 +276,16 @@ async def code_checker(request: Request):
 
 @app.post("/webcam/score/store")
 async def store_scores(request: Request):
+    print("Score Storing")
     data = await request.json()
     data = {
         "assessment_id" : data.get("assessment_id") ,
         "email" : data.get("email") ,
         "risk_score" : state.risk_score,
         "trust_score" : state.trust_score,
-        "violation_score" : state.violation_score,
-        "code_risk_score" : state.code_risk_score,
-        "code_trust_score" : state.code_trust_score,
-        "code_violation_score" : state.code_violation_score
+        "violation_score" : state.violation_score
     }
+    print(data)
     
     Risk_Score_DB.insert_one(data)
     return {"status": True}
