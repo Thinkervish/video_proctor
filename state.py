@@ -20,14 +20,14 @@ Assessment_id = "Sairam"
 Email_id = "Jrsairam@5686"
 
 # Dynamic Video Scores (Capped at 50)
-risk_score = 5
-trust_score = 45
-violation_score = 2
+risk_score = 50
+trust_score = 0
+violation_score = 43
 
 # Dynamic Code Scores (Capped at 20)
-code_risk_score = 5
-code_trust_score = 15
-code_violation_score = 1
+code_risk_score = 10
+code_trust_score = 10
+code_violation_score = 2
 
 def save_state():
     """Persist current scores to this file (state.py)."""

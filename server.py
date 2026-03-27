@@ -273,7 +273,7 @@ async def code_checker(request: Request):
     CodeEvaluation_collection.insert_one(val)
     
 
-@app.post("webcam/score/store")
+@app.post("/webcam/score/store")
 async def store_scores(request: Request):
     data = await request.json()
     data = {
