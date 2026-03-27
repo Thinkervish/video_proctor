@@ -4,7 +4,7 @@ MONGO_URL= "mongodb+srv://vishravi135_db_user:Virtusa_Hackathon@ai.6axnjyd.mongo
 try:
     client = MongoClient(MONGO_URL)
     db = client['proctoring']
-    
+    Risk_Score_DB = db["Risk_Score_DB"]
     violation_logs_collection = db['violation_logs'] 
     CodeEvaluation_collection = db['Code_Detection_DB']
 

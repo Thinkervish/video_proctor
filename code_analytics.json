@@ -12,56 +12,28 @@
         }
     },
     "code_agents_trust_score": 15,
-    "question_count": 2,
+    "question_count": 1,
     "questions": [
         {
-            "timestamp": "2026-03-26T14:47:54.542000",
+            "timestamp": "2026-03-27T04:36:03.359139",
             "language": "Python",
             "plagiarism": {
                 "plagiarism_score": 0,
                 "is_plagiarized": false
             },
             "ai_detection": {
-                "ai_score": 0.431,
+                "ai_score": 0.611,
                 "is_ai_generated": true,
-                "confidence": "low",
+                "confidence": "medium",
                 "feature_scores": {
-                    "docstring_quality": 0.0,
-                    "naming_conventions": 0.15,
-                    "structural_patterns": 0.25,
-                    "comment_style": 0.55,
+                    "docstring_quality": 0.54,
+                    "naming_conventions": 0.55,
+                    "structural_patterns": 0.2,
+                    "comment_style": 0.9,
                     "complexity_entropy": 0.55,
                     "code_style": 0.45,
                     "terse_ai_patterns": 1.0
                 },
-                "human_signals_found": [],
-                "parse_error": null
-            },
-            "risk": {
-                "suspicion_score": 5,
-                "code_agents_risk_score": 5,
-                "max_score": 20,
-                "risk_level": "LOW RISK",
-                "flagged": false,
-                "terminated": false,
-                "tab_switches": 0,
-                "violations": {
-                    "ai_generated": 1
-                }
-            }
-        },
-        {
-            "timestamp": "2026-03-26T14:49:03.340489",
-            "language": "Python",
-            "plagiarism": {
-                "plagiarism_score": 0.06,
-                "is_plagiarized": false
-            },
-            "ai_detection": {
-                "ai_score": 0.0,
-                "is_ai_generated": false,
-                "confidence": "insufficient_data",
-                "feature_scores": {},
                 "human_signals_found": [],
                 "parse_error": null
             },

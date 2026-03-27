@@ -4,6 +4,8 @@ import os
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.pdfgen import canvas
+import state
+from Connections.ViolationLogsDB import Risk_Score_DB
 
 
 class ReportAgent:
@@ -43,6 +45,8 @@ class ReportAgent:
             raise TypeError(f"Type {type(obj)} not serializable")
 
         analytics = {
+            "assessment_id":state.Assessment_id ,
+            "email":state.Email_id,
             "duration":        round(duration, 2),
             "avg_attention":   round(avg_attention, 2),
             "violations":      violations,
@@ -57,6 +61,8 @@ class ReportAgent:
             "warning_history": self.risk_agent.warning_history,
             "pattern_summary": self.risk_agent.get_pattern_summary(),
         }
+
+        
 
         with open("outputs/analytics.json", "w") as f:
             json.dump(analytics, f, indent=2, default=json_serial)

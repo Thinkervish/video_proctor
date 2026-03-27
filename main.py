@@ -126,6 +126,12 @@ def run_proctoring():
     avg_attention = int(np.mean(attention_scores)) if attention_scores else 0
     report_agent.generate_reports(elapsed, avg_attention)
 
+    # ── Final Score Sync ─────────────────────────────
+    state.risk_score      = state.risk_agent.suspicion_score
+    state.trust_score     = state.risk_agent.get_trust_score()
+    state.violation_score = sum(state.risk_agent.violation_counts.values())
+    state.save_state()
+
     print("FRONT CAM PROCTORING DONE ✅")
 
 

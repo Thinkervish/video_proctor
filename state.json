@@ -1,0 +1,14 @@
+{
+    "video": {
+        "risk_score": 0,
+        "trust_score": 50,
+        "violation_score": 1
+    },
+    "code": {
+        "risk_score": 0,
+        "trust_score": 20,
+        "violation_score": 0
+    },
+    "assessment_id": "cf8388c3-3d05-48df-8b04-6f5b8f4eb769",
+    "email_id": "vishravi135@gmail.com"
+}

@@ -57,12 +57,30 @@ _supervisor = CodeSupervisorAgent(plagiarism_agent, ai_agent)
 # Supervisor instance for code analysis
 
 
+@app.on_event("shutdown")
+def shutdown_event():
+    print("[Server] Shutdown signal received. Cleaning up...")
+    if getattr(state, "proctoring_active", False):
+        state.proctoring_active = False
+        # Wait a moment for the thread to finish and save state
+        if proctor_thread and proctor_thread.is_alive():
+            proctor_thread.join(timeout=2.0)
+    print("[Server] Shutdown complete.")
+
+
+
 # ── Ensure state fields exist ────────────────────────────────────────────────
 if not hasattr(state, "latest_frame"):       state.latest_frame       = None
 if not hasattr(state, "latest_frame_time"):  state.latest_frame_time  = 0.0
 if not hasattr(state, "proctoring_active"):  state.proctoring_active  = False
 if not hasattr(state, "Assessment_id"):      state.Assessment_id      = None
 if not hasattr(state, "Email_id"):           state.Email_id           = None
+state.risk_score         = 0
+state.trust_score        = 50
+state.violation_score    = 0
+state.code_risk_score      = 0
+state.code_trust_score     = 20
+state.code_violation_score = 0
 
 
 # ---------------------------------------------------------------------------
@@ -255,3 +273,19 @@ async def code_checker(request: Request):
     CodeEvaluation_collection.insert_one(val)
     
 
+@app.post("webcam/score/store")
+async def store_scores(request: Request):
+    data = await request.json()
+    data = {
+        "assessment_id" : data.get("assessment_id") ,
+        "email" : data.get("email") ,
+        "risk_score" : state.risk_score,
+        "trust_score" : state.trust_score,
+        "violation_score" : state.violation_score
+        "code_risk_score" : state.code_risk_score,
+        "code_trust_score" : state.code_trust_score,
+        "code_violation_score" : state.code_violation_score
+    }
+    
+    Risk_Score_DB.insert_one(data)
+    return {"status": True}

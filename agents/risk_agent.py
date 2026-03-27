@@ -109,6 +109,12 @@ class RiskAgent:
         self._check_burst(now, event)
         self._check_trust_cutoff()
 
+        # ── Update shared state ───────────────────────────────────
+        import state
+        state.risk_score      = self.suspicion_score
+        state.trust_score     = self.get_trust_score()
+        state.violation_score = sum(self.violation_counts.values())
+
     def _set_warning(self, event: str, repeat: int, penalty: int) -> None:
         if event not in WARNING_MESSAGES: return
         title, base_msg = WARNING_MESSAGES[event]
