@@ -3,15 +3,135 @@
   "email": "ssridharan599@gmail.com",
   "duration": 0,
   "avg_attention": 0,
-  "violations": [],
-  "violation_count": 0,
-  "suspicion_score": 0,
-  "desktop_cam_risk_score": 0,
+  "violations": [
+    {
+      "assessment_id": "92e4dde4-2616-4fe5-9e63-7673c804bea1",
+      "email": "ssridharan599@gmail.com",
+      "time": "21_18_15_078",
+      "type": "talking",
+      "detail": "",
+      "cloud_url": "https://res.cloudinary.com/dawfv3niz/image/upload/v1774626497/92e4dde4-2616-4fe5-9e63-7673c804bea1/ssridharan599%2540gmail.com/talking_21_18_15_078.jpg",
+      "timestamp": 1774626495.0781991,
+      "_id": "69c6a6c2dc55ddfe9055a6fc"
+    },
+    {
+      "assessment_id": "92e4dde4-2616-4fe5-9e63-7673c804bea1",
+      "email": "ssridharan599@gmail.com",
+      "time": "21_18_19_025",
+      "type": "face_not_visible",
+      "detail": "",
+      "cloud_url": "https://res.cloudinary.com/dawfv3niz/image/upload/v1774626498/92e4dde4-2616-4fe5-9e63-7673c804bea1/ssridharan599%2540gmail.com/face_not_visible_21_18_19_025.jpg",
+      "timestamp": 1774626499.0259259,
+      "_id": "69c6a6c3dc55ddfe9055a6fd"
+    },
+    {
+      "assessment_id": "92e4dde4-2616-4fe5-9e63-7673c804bea1",
+      "email": "ssridharan599@gmail.com",
+      "time": "21_18_19_946",
+      "type": "low_attention",
+      "detail": "",
+      "cloud_url": "https://res.cloudinary.com/dawfv3niz/image/upload/v1774626499/92e4dde4-2616-4fe5-9e63-7673c804bea1/ssridharan599%2540gmail.com/low_attention_21_18_19_946.jpg",
+      "timestamp": 1774626499.9464118,
+      "_id": "69c6a6c5dc55ddfe9055a6fe"
+    },
+    {
+      "assessment_id": "92e4dde4-2616-4fe5-9e63-7673c804bea1",
+      "email": "ssridharan599@gmail.com",
+      "time": "21_18_25_979",
+      "type": "head_turned",
+      "detail": "",
+      "cloud_url": "https://res.cloudinary.com/dawfv3niz/image/upload/v1774626506/92e4dde4-2616-4fe5-9e63-7673c804bea1/ssridharan599%2540gmail.com/head_turned_21_18_25_979.jpg",
+      "timestamp": 1774626505.9793887,
+      "_id": "69c6a6cddc55ddfe9055a6ff"
+    }
+  ],
+  "violation_count": 4,
+  "suspicion_score": 20,
+  "desktop_cam_risk_score": 20,
   "max_score": 50,
-  "trust_score": 50,
-  "risk": "NO RISK",
+  "trust_score": 30,
+  "risk": "LOW RISK",
   "flagged": false,
-  "timeline": [],
-  "warning_history": [],
-  "pattern_summary": {}
+  "timeline": [
+    {
+      "event": "talking",
+      "score": 5,
+      "time": "21:18:18",
+      "repeat": 1,
+      "penalty": 5,
+      "flagged": false
+    },
+    {
+      "event": "face_not_visible",
+      "score": 10,
+      "time": "21:18:19",
+      "repeat": 1,
+      "penalty": 5,
+      "flagged": false
+    },
+    {
+      "event": "low_attention",
+      "score": 10,
+      "time": "21:18:21",
+      "repeat": 1,
+      "penalty": 0,
+      "flagged": false
+    },
+    {
+      "event": "head_turned",
+      "score": 15,
+      "time": "21:18:29",
+      "repeat": 1,
+      "penalty": 5,
+      "flagged": false
+    }
+  ],
+  "warning_history": [
+    {
+      "title": "\ud83d\udde3\ufe0f Talking Detected",
+      "message": "Please maintain silence during the exam. (occurrence \u00d71)",
+      "event": "talking",
+      "repeat": 1,
+      "penalty": 5,
+      "time": "21:18:18"
+    },
+    {
+      "title": "\ud83d\udc64 Face Not Visible",
+      "message": "Please ensure your face is clearly visible on camera. (occurrence \u00d71)",
+      "event": "face_not_visible",
+      "repeat": 1,
+      "penalty": 5,
+      "time": "21:18:19"
+    },
+    {
+      "title": "\ud83d\ude36 Low Attention",
+      "message": "Please focus on the exam screen. (occurrence \u00d71)",
+      "event": "low_attention",
+      "repeat": 1,
+      "penalty": 0,
+      "time": "21:18:21"
+    },
+    {
+      "title": "\u21a9\ufe0f Head Turn Detected",
+      "message": "Please keep your eyes on the screen at all times. (occurrence \u00d71)",
+      "event": "head_turned",
+      "repeat": 1,
+      "penalty": 5,
+      "time": "21:18:29"
+    }
+  ],
+  "pattern_summary": {
+    "talking": {
+      "count": 1
+    },
+    "face_not_visible": {
+      "count": 1
+    },
+    "low_attention": {
+      "count": 1
+    },
+    "head_turned": {
+      "count": 1
+    }
+  }
 }

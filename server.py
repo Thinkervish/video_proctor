@@ -76,12 +76,14 @@ if not hasattr(state, "latest_frame_time"):  state.latest_frame_time  = 0.0
 if not hasattr(state, "proctoring_active"):  state.proctoring_active  = False
 if not hasattr(state, "Assessment_id"):      state.Assessment_id      = None
 if not hasattr(state, "Email_id"):           state.Email_id           = None
-state.risk_score         = 0
-state.trust_score        = 50
-state.violation_score    = 0
-state.code_risk_score      = 0
-state.code_trust_score     = 20
-state.code_violation_score = 0
+
+if not hasattr(state, "risk_score"):         state.risk_score         = 0
+if not hasattr(state, "trust_score"):        state.trust_score        = 50
+if not hasattr(state, "violation_score"):    state.violation_score    = 0
+
+if not hasattr(state, "code_risk_score"):      state.code_risk_score      = 0
+if not hasattr(state, "code_trust_score"):     state.code_trust_score     = 20
+if not hasattr(state, "code_violation_score"): state.code_violation_score = 0
 
 
 # ---------------------------------------------------------------------------
@@ -272,20 +274,50 @@ async def code_checker(request: Request):
 
     }
     CodeEvaluation_collection.insert_one(val)
-    
+    return {"status": "success", "result": result}
 
 @app.post("/webcam/score/store")
 async def store_scores(request: Request):
-    print("Score Storing")
-    data = await request.json()
-    data = {
-        "assessment_id" : data.get("assessment_id") ,
-        "email" : data.get("email") ,
-        "risk_score" : state.risk_score,
-        "trust_score" : state.trust_score,
-        "violation_score" : state.violation_score
-    }
-    print(data)
+    print("[Server] Final Score Storage Triggered")
+    data_json = await request.json()
     
+    # ── Pull latest scores — prioritizing live agents ──────────────────
+    risk_score      = state.risk_score
+    trust_score     = state.trust_score
+    violation_score = state.violation_score
+
+    code_risk_score      = state.code_risk_score
+    code_trust_score     = state.code_trust_score
+    code_violation_score = state.code_violation_score
+
+    if state.risk_agent is not None:
+        risk_score      = state.risk_agent.suspicion_score
+        trust_score     = state.risk_agent.get_trust_score()
+        violation_score = sum(state.risk_agent.violation_counts.values())
+
+    if _supervisor is not None:
+        code_risk_summary = _supervisor.get_risk_summary()
+        code_risk_score      = code_risk_summary.get("suspicion_score", code_risk_score)
+        code_trust_score     = _supervisor.code_risk_agent.get_trust_score()
+        code_violation_score = sum(_supervisor.code_risk_agent.violation_counts.values())
+
+    data = {
+        "assessment_id" : data_json.get("assessment_id", state.Assessment_id),
+        "email"         : data_json.get("email", state.Email_id),
+        "video_proctoring": {
+            "risk_score"    : risk_score,
+            "trust_score"   : trust_score,
+            "violation_score": violation_score,
+        },
+        "code_analysis": {
+            "risk_score"    : code_risk_score,
+            "trust_score"   : code_trust_score,
+            "violation_score": code_violation_score
+        },
+        "timestamp"     : time.strftime("%Y-%m-%d %H:%M:%S")
+    }
+    
+    print(f"[Server] Storing to MongoDB: {data}")
     Risk_Score_DB.insert_one(data)
-    return {"status": True}
+    
+    return {"status": True, "stored_data": data}
