@@ -280,44 +280,23 @@ async def code_checker(request: Request):
 async def store_scores(request: Request):
     print("[Server] Final Score Storage Triggered")
     data_json = await request.json()
-    
-    # ── Pull latest scores — prioritizing live agents ──────────────────
-    risk_score      = state.risk_score
-    trust_score     = state.trust_score
-    violation_score = state.violation_score
-
-    code_risk_score      = state.code_risk_score
-    code_trust_score     = state.code_trust_score
-    code_violation_score = state.code_violation_score
-
-    if state.risk_agent is not None:
-        risk_score      = state.risk_agent.suspicion_score
-        trust_score     = state.risk_agent.get_trust_score()
-        violation_score = sum(state.risk_agent.violation_counts.values())
-
-    if _supervisor is not None:
-        code_risk_summary = _supervisor.get_risk_summary()
-        code_risk_score      = code_risk_summary.get("suspicion_score", code_risk_score)
-        code_trust_score     = _supervisor.code_risk_agent.get_trust_score()
-        code_violation_score = sum(_supervisor.code_risk_agent.violation_counts.values())
-
+    print("BEFORE Val")
     data = {
-        "assessment_id" : data_json.get("assessment_id", state.Assessment_id),
-        "email"         : data_json.get("email", state.Email_id),
+        "assessment_id" : data_json.get("assessment_id"),
+        "email"         : data_json.get("email"),
         "video_proctoring": {
-            "risk_score"    : risk_score,
-            "trust_score"   : trust_score,
-            "violation_score": violation_score,
+            "risk_score"    : state.risk_score,
+            "trust_score"   : state.trust_score,
+            "violation_score": state.violation_score,
         },
         "code_analysis": {
-            "risk_score"    : code_risk_score,
-            "trust_score"   : code_trust_score,
-            "violation_score": code_violation_score
+            "risk_score"    : state.code_risk_score,
+            "trust_score"   : state.code_trust_score,
+            "violation_score": state.code_violation_score
         },
         "timestamp"     : time.strftime("%Y-%m-%d %H:%M:%S")
     }
-    
-    print(f"[Server] Storing to MongoDB: {data}")
+    print("After val")
+    print(data)
     Risk_Score_DB.insert_one(data)
-    
-    return {"status": True, "stored_data": data}
+    return {"Status":True}

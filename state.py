@@ -20,9 +20,9 @@ Assessment_id = "Sairam"
 Email_id = "Jrsairam@5686"
 
 # Dynamic Video Scores (Capped at 50)
-risk_score = 20
-trust_score = 30
-violation_score = 4
+risk_score = 50
+trust_score = 0
+violation_score = 42
 
 # Dynamic Code Scores (Capped at 20)
 code_risk_score = 0

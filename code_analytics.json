@@ -1,95 +1,23 @@
 {
     "code_agents_risk_score": {
-        "suspicion_score": 10,
-        "code_agents_risk_score": 10,
+        "suspicion_score": 0,
+        "code_agents_risk_score": 0,
         "max_score": 20,
-        "risk_level": "MEDIUM RISK",
+        "risk_level": "NO RISK",
         "flagged": false,
         "terminated": false,
         "tab_switches": 0,
-        "violations": {
-            "plagiarism": 2
-        }
+        "violations": {}
     },
-    "code_agents_trust_score": 10,
-    "question_count": 3,
+    "code_agents_trust_score": 20,
+    "question_count": 2,
     "questions": [
         {
-            "timestamp": "2026-03-27T06:05:07.822891",
+            "timestamp": "2026-03-27T16:42:46.874351",
             "language": "Python",
             "plagiarism": {
                 "plagiarism_score": 0,
                 "is_plagiarized": false
-            },
-            "ai_detection": {
-                "ai_score": 0.097,
-                "is_ai_generated": false,
-                "confidence": "unlikely",
-                "feature_scores": {
-                    "docstring_quality": 0.0,
-                    "naming_conventions": 0.0,
-                    "structural_patterns": 0.0,
-                    "comment_style": 0.0,
-                    "complexity_entropy": 0.55,
-                    "code_style": 0.1,
-                    "terse_ai_patterns": 0.1
-                },
-                "human_signals_found": [],
-                "parse_error": null
-            },
-            "risk": {
-                "suspicion_score": 0,
-                "code_agents_risk_score": 0,
-                "max_score": 20,
-                "risk_level": "NO RISK",
-                "flagged": false,
-                "terminated": false,
-                "tab_switches": 0,
-                "violations": {}
-            }
-        },
-        {
-            "timestamp": "2026-03-27T06:05:26.504042",
-            "language": "Python",
-            "plagiarism": {
-                "plagiarism_score": 0.999,
-                "is_plagiarized": true
-            },
-            "ai_detection": {
-                "ai_score": 0.097,
-                "is_ai_generated": false,
-                "confidence": "unlikely",
-                "feature_scores": {
-                    "docstring_quality": 0.0,
-                    "naming_conventions": 0.0,
-                    "structural_patterns": 0.0,
-                    "comment_style": 0.0,
-                    "complexity_entropy": 0.55,
-                    "code_style": 0.1,
-                    "terse_ai_patterns": 0.1
-                },
-                "human_signals_found": [],
-                "parse_error": null
-            },
-            "risk": {
-                "suspicion_score": 5,
-                "code_agents_risk_score": 5,
-                "max_score": 20,
-                "risk_level": "LOW RISK",
-                "flagged": false,
-                "terminated": false,
-                "tab_switches": 0,
-                "violations": {
-                    "plagiarism": 1
-                }
-            }
-        },
-        {
-            "timestamp": "2026-03-27T06:05:38.717781",
-            "language": "Python",
-            "plagiarism": {
-                "plagiarism_score": 0.999,
-                "is_plagiarized": true
             },
             "ai_detection": {
                 "ai_score": 0.126,
@@ -108,16 +36,48 @@
                 "parse_error": null
             },
             "risk": {
-                "suspicion_score": 10,
-                "code_agents_risk_score": 10,
+                "suspicion_score": 0,
+                "code_agents_risk_score": 0,
                 "max_score": 20,
-                "risk_level": "MEDIUM RISK",
+                "risk_level": "NO RISK",
                 "flagged": false,
                 "terminated": false,
                 "tab_switches": 0,
-                "violations": {
-                    "plagiarism": 2
-                }
+                "violations": {}
+            }
+        },
+        {
+            "timestamp": "2026-03-27T16:43:40.294483",
+            "language": "Python",
+            "plagiarism": {
+                "plagiarism_score": 0.395,
+                "is_plagiarized": false
+            },
+            "ai_detection": {
+                "ai_score": 0.227,
+                "is_ai_generated": false,
+                "confidence": "unlikely",
+                "feature_scores": {
+                    "docstring_quality": 0.0,
+                    "naming_conventions": 0.5,
+                    "structural_patterns": 0.225,
+                    "comment_style": 0.0,
+                    "complexity_entropy": 0.7,
+                    "code_style": 0.25,
+                    "terse_ai_patterns": 0.1
+                },
+                "human_signals_found": [],
+                "parse_error": null
+            },
+            "risk": {
+                "suspicion_score": 0,
+                "code_agents_risk_score": 0,
+                "max_score": 20,
+                "risk_level": "NO RISK",
+                "flagged": false,
+                "terminated": false,
+                "tab_switches": 0,
+                "violations": {}
             }
         }
     ]
