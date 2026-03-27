@@ -12,6 +12,3 @@ pymongo
 cloudinary
 python-multipart
 python-dotenv
-mediapipe==0.10.9
-protobuf==3.20.3
-tensorflow==2.12.0

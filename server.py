@@ -281,7 +281,7 @@ async def store_scores(request: Request):
         "email" : data.get("email") ,
         "risk_score" : state.risk_score,
         "trust_score" : state.trust_score,
-        "violation_score" : state.violation_score
+        "violation_score" : state.violation_score,
         "code_risk_score" : state.code_risk_score,
         "code_trust_score" : state.code_trust_score,
         "code_violation_score" : state.code_violation_score

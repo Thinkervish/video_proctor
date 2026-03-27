@@ -1,16 +1,27 @@
+import os
 import cv2
 import numpy as np
 import mediapipe as mp
+from mediapipe.tasks import python as mp_tasks
+from mediapipe.tasks.python import vision
 
 
 class SpoofingAgent:
 
     def __init__(self):
-        self.face_mesh = mp.solutions.face_mesh.FaceMesh(
-            refine_landmarks=True,
-            min_detection_confidence=0.5,
+        # MediaPipe Tasks API — face landmarker (replaces FaceMesh)
+        model_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "models", "face_landmarker.task",
+        )
+        options = vision.FaceLandmarkerOptions(
+            base_options=mp_tasks.BaseOptions(model_asset_path=model_path),
+            running_mode=vision.RunningMode.IMAGE,
+            num_faces=1,
+            min_face_detection_confidence=0.5,
             min_tracking_confidence=0.5,
         )
+        self.face_mesh = vision.FaceLandmarker.create_from_options(options)
 
         # Eye landmark indices for blink detection
         self.left_eye  = [33,  160, 158, 133, 153, 144]
@@ -75,12 +86,13 @@ class SpoofingAgent:
         """
         h, w   = frame.shape[:2]
         rgb    = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        result = self.face_mesh.process(rgb)
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+        result = self.face_mesh.detect(mp_image)
 
-        if not result.multi_face_landmarks:
+        if not result.face_landmarks:
             return {"is_spoof": False, "confidence": 0.0, "reason": "no_face"}
 
-        lm = result.multi_face_landmarks[0].landmark
+        lm = result.face_landmarks[0]
 
         # ── Signal 1: Texture variance ────────────────────────────
         xs = [int(p.x * w) for p in lm]

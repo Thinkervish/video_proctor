@@ -1,6 +1,9 @@
+import os
 import time
 import cv2
 import mediapipe as mp
+from mediapipe.tasks import python as mp_tasks
+from mediapipe.tasks.python import vision
 from ultralytics import YOLO
 
 
@@ -12,9 +15,17 @@ class VisionAgent:
         # YOLOv8 for object + person detection
         self.model = YOLO(model_path)
 
-        # MediaPipe frontal face detection
-        mp_face = mp.solutions.face_detection
-        self.face_detector = mp_face.FaceDetection(min_detection_confidence=0.5)
+        # MediaPipe Tasks API — face detection
+        face_model = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "models", "blaze_face_short_range.tflite",
+        )
+        options = vision.FaceDetectorOptions(
+            base_options=mp_tasks.BaseOptions(model_asset_path=face_model),
+            running_mode=vision.RunningMode.IMAGE,
+            min_detection_confidence=0.5,
+        )
+        self.face_detector = vision.FaceDetector.create_from_options(options)
 
         # Multi-person sustained timer
         self.multi_person_start     = None
@@ -71,10 +82,11 @@ class VisionAgent:
         else:
             self.multi_person_start = None
 
-        # ── Frontal face detection ─────────────────────────────────
+        # ── Frontal face detection (Tasks API) ────────────────────
         rgb_frame    = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        face_results = self.face_detector.process(rgb_frame)
-        face_visible = bool(face_results.detections)
+        mp_image     = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
+        face_results = self.face_detector.detect(mp_image)
+        face_visible = len(face_results.detections) > 0
 
         return {
             "illegal_objects": illegal,
