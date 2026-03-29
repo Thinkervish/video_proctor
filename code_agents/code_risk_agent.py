@@ -17,6 +17,7 @@ Violations tracked:
 
 import time
 from collections import defaultdict
+import state
 
 
 class CodeRiskAgent:
@@ -99,11 +100,6 @@ class CodeRiskAgent:
         )
 
         self._set_warning(event, repeat)
-
-        import state
-        state.code_risk_score      = self.suspicion_score
-        state.code_trust_score     = self.get_trust_score()
-        state.code_violation_score = sum(self.violation_counts.values())
 
         if self.suspicion_score >= self.MAX_SCORE:
             print("[CODE RISK] ⚠️  Candidate FLAGGED — max code risk score reached.")

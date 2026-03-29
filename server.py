@@ -262,7 +262,15 @@ async def code_checker(request: Request):
     question_id   = data.get("question_id")
     assessment_id = data.get("assessment_id")
     result = _supervisor.analyze(code , language)
-    print(result)
+    
+    # ── Update state scores with latest analysis results ───────────────────
+    summary = result.get("risk", {})
+    state.code_risk_score      = summary.get("suspicion_score", 0)
+    state.code_trust_score     = 20 - state.code_risk_score
+    state.code_violation_score = sum(summary.get("violations", {}).values())
+    state.save_state()
+
+    print(f"[Server] Code analysis complete. State updated: risk={state.code_risk_score}")
 
     val  = {
         "code" : code , 
@@ -271,19 +279,32 @@ async def code_checker(request: Request):
         "question_id" : question_id , 
         "assessment_id" : assessment_id , 
         "result" : result 
-
     }
     CodeEvaluation_collection.insert_one(val)
     return {"status": "success", "result": result}
 
 @app.post("/webcam/score/store")
 async def store_scores(request: Request):
-    print("[Server] Final Score Storage Triggered")
-    data_json = await request.json()
-    print("BEFORE Val")
+    print("\n" + "="*50)
+    print("[Server] FINAL SCORE STORAGE TRIGGERED")
+    print("="*50)
+    
+    try:
+        data_json = await request.json()
+    except Exception as e:
+        print(f"[Server] Error parsing JSON body: {e}")
+        return JSONResponse({"Status": False, "error": "Invalid JSON"}, status_code=400)
+
+    email = data_json.get("email", "unknown")
+    assessment_id = data_json.get("assessment_id", "unknown")
+    
+    print(f"[Server] Storing scores for: {email} | Assessment: {assessment_id}")
+    print(f"[Server] Current Video State: risk={state.risk_score}, trust={state.trust_score}, violations={state.violation_score}")
+    print(f"[Server] Current Code State:  risk={state.code_risk_score}, trust={state.code_trust_score}, violations={state.code_violation_score}")
+
     data = {
-        "assessment_id" : data_json.get("assessment_id"),
-        "email"         : data_json.get("email"),
+        "assessment_id" : assessment_id,
+        "email"         : email,
         "video_proctoring": {
             "risk_score"    : state.risk_score,
             "trust_score"   : state.trust_score,
@@ -296,7 +317,11 @@ async def store_scores(request: Request):
         },
         "timestamp"     : time.strftime("%Y-%m-%d %H:%M:%S")
     }
-    print("After val")
-    print(data)
-    Risk_Score_DB.insert_one(data)
-    return {"Status":True}
+    
+    try:
+        res = Risk_Score_DB.insert_one(data)
+        print(f"[Server] MongoDB insert success. ID: {res.inserted_id}")
+        return {"Status": True, "id": str(res.inserted_id)}
+    except Exception as e:
+        print(f"[Server] MongoDB insert FAILED: {e}")
+        return JSONResponse({"Status": False, "error": str(e)}, status_code=500)
